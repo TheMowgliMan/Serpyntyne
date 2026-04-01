@@ -2,6 +2,7 @@
 
 .global setGdt
 .global reloadSegments
+.global setTss
 
 setGdt:
     cli
@@ -22,4 +23,8 @@ reload_cs:
     movw %ax, %fs
     movw %ax, %gs
     movw %ax, %ss
+    ret
+
+setTss:
+    ltr %di
     ret

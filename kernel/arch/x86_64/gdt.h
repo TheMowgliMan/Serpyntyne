@@ -21,8 +21,21 @@ struct __attribute__((packed)) GDTR
     uint64_t base;
 };
 
+struct __attribute__((packed)) TSS
+{
+    uint32_t reserved0;
+    uint64_t rsp0;
+    uint64_t rsp1;
+    uint64_t rsp2;
+    uint64_t reserved1;
+    uint64_t ist [7];
+    uint64_t reserved2;
+    uint16_t reserved 3, io_map_base;
+}
+
 extern void setGdt(struct GDTR* gdtr);
 extern void reloadSegments(void);
+extern void setTss(uint16_t tss);
 
 void encodeGDTItem(uint8_t *target, struct GDTItem source);
 void initGDT(void);
