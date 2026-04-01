@@ -30,8 +30,8 @@ struct __attribute__((packed)) TSS
     uint64_t reserved1;
     uint64_t ist [7];
     uint64_t reserved2;
-    uint16_t reserved 3, io_map_base;
-}
+    uint16_t reserved3, io_map_base;
+};
 
 extern void setGdt(struct GDTR* gdtr);
 extern void reloadSegments(void);

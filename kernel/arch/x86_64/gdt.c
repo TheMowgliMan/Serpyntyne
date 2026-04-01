@@ -1,6 +1,7 @@
 #include <terminal.h> // Shut up Flycheck
 #include <gdt.h>
 #include <stdint.h>
+#include <memory.h>
 
 const uint8_t GDT_ENTRIES = 7; // Null, kernel code, kernel data, user code and data, TSS (takes 2)
 const uint8_t GDT_ENTRY_LENGTH = 8; // Bytes
@@ -53,9 +54,10 @@ void encodeGDTItem(uint8_t *target, struct GDTItem source)
 
 void encodeTSS(uint8_t *target)
 {
-  uint64_t tss_addr = &tss;
+  uint64_t tss_addr = (uint64_t)&tss;
+  uint32_t shift_addr = tss_addr >> 32;
   encodeGDTItem(target, generateGDTItem(tss_addr & 0xFFFFFFFF, sizeof(tss) - 1, 0x89, 0));
-  memcpy(target[8], tss_addr >> 32, sizeof(uint8_t) * 4);
+  memcpy(&target[8], &shift_addr, sizeof(uint32_t));
 }
 
 void initGDT(void)
