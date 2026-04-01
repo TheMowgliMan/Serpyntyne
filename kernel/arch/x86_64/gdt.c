@@ -1,12 +1,6 @@
 #include <terminal.h> // Shut up Flycheck
 #include <gdt.h>
-#include <limine.h>
-
-__attribute__((used, section(".limine_requests")))
-static volatile struct limine_hhdm_request hhdm_request = {
-  .id = LIMINE_HHDM_REQUEST_ID,
-  .revision = 0
-};
+#include <stdint.h>
 
 const uint8_t GDT_ENTRIES = 5; // Null, kernel code, kernel data
 const uint8_t GDT_ENTRY_LENGTH = 8; // Bytes
@@ -14,6 +8,10 @@ const uint8_t GDT_TOTAL_LENGTH = 40;
 
 static uint8_t GDT[40];
 static struct GDTR rr;
+
+uint8_t __attribute__((aligned(64))) df_stack[8192];
+uint8_t __attribute__((aligned(64))) nmi_stack[8192];
+uint8_t __attribute__((aligned(64))) miscxc_stack[8192];
 
 extern void setGdt(struct GDTR* gdtr);
 extern void reloadSegments(void);

@@ -1,6 +1,8 @@
 #ifndef GDT_H_
 #define GDT_H_
 
+#include <stdint.h>
+
 // Allows for simpler accessing
 #define DESC GDT_ENTRY_LENGTH *
 

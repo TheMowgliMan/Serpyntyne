@@ -3,7 +3,7 @@
 #include <stdbool.h>
 #include <limine.h>
 #include <terminal.h>
-#include <gdt.h>
+#include <archinit.h>
 
 // Set the base revision to 6, this is recommended as this is the latest
 // base revision described by the Limine boot protocol specification.
@@ -41,7 +41,7 @@ void kmain(void) {
   termInit();
   kputs("Serpyntyne 0.0.0\r\n");
   
-  initGDT();
+  arch_preinit();
 
   // We're done, just hang...
   kerror("We're done, hanging...\r\n");
