@@ -72,22 +72,25 @@ static bool print(const char* data, size_t length) {
     return true;
 }
 
-int printf(const char* restrict format, ...) {
+int kprintf(const char* restrict format, ...) {
     va_list parameters;
     va_start(parameters, format);
 
     int written = 0;
 
-    while (*format != '\0') {
+    while (*format != '\0')
+    {
         size_t maxrem = INT_MAX - written;
 
-        if (format[0] != '%' || format[1] == '%') {
+        if (format[0] != '%' || format[1] == '%')
+        {
             if (format[0] == '%')
                 format++;
             size_t amount = 1;
             while (format[amount] && format[amount] != '%')
                 amount++;
-            if (maxrem < amount) {
+            if (maxrem < amount)
+            {
                 // TODO: Set errno to EOVERFLOW.
                 return -1;
             }
@@ -100,7 +103,8 @@ int printf(const char* restrict format, ...) {
 
         const char* format_begun_at = format++;
 
-        if (*format == 'c') {
+        if (*format == 'c')
+        {
             format++;
             char c = (char) va_arg(parameters, int /* char promotes to int */);
             if (!maxrem) {
@@ -110,7 +114,9 @@ int printf(const char* restrict format, ...) {
             if (!print(&c, sizeof(c)))
                 return -1;
             written++;
-        } else if (*format == 's') {
+        }
+        else if (*format == 's')
+        {
             format++;
             const char* str = va_arg(parameters, const char*);
             size_t len = strlen(str);
@@ -121,7 +127,75 @@ int printf(const char* restrict format, ...) {
             if (!print(str, len))
                 return -1;
             written += len;
-        } else {
+        }
+        else if (*format == 'd')
+        {
+            format++;
+            int64_t decimal = va_arg(parameters, int64_t);
+            do {
+                char c = (char)(decimal % 10) + 48 // This gets us the digit in ASCII
+
+                if (!maxrem)
+                {
+                    // TODO: Set errno to EOVERFLOW.
+                    return -1;
+                }
+
+                if (!print(&c, sizeof(c)))
+                    return -1;
+
+                written += 1;
+                decimal = decimal / 10;
+            } while (decimal > 10);
+        }
+        else if (*format == 'b')
+        {
+            format++;
+            uint64_t binary = (uint64_t)va_arg(parameters, int64_t);
+
+            do
+            {
+                char c = (char)(binary & 0x1) + 48;
+
+                if (!maxrem)
+                {
+                    // TODO: Set errno to EOVERFLOW.
+                    return -1;
+                }
+
+                if (!print(&c, sizeof(c)))
+                    return -1;
+
+                written += 1;
+                binary = binary >> 1;
+            } while (binary > 0);
+        }
+        else if (*format == 'x')
+        {
+            format++;
+            uint64_t hexadecimal = (uint64_t)va_arg(parameters, int64_t);
+            if (maxrem > 2) kputs("0x");
+
+            do
+            {
+                char c = (char)(binary & 0xF) + 48;
+                if (char > 0x39) char += 39; // For characters a-f
+
+                if (!maxrem)
+                {
+                    // TODO: Set errno to EOVERFLOW.
+                    return -1;
+                }
+
+                if (!print(&c, sizeof(c)))
+                    return -1;
+
+                written += 1;
+                hexadecimal = hexadecimal >> 4;
+            } while (hexadecimal > 0);
+        }
+        else
+        {
             format = format_begun_at;
             size_t len = strlen(format);
             if (maxrem < len) {
