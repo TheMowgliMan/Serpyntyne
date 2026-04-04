@@ -133,8 +133,19 @@ int kprintf(const char* restrict format, ...) {
         {
             format++;
             int64_t decimal = va_arg(parameters, int64_t);
+
+            if (decimal < 0)
+            {
+                decimal *= -1;
+
+                if (maxrem > 0) kputs("-");
+            }
+
+            uint64_t divisor = 1000000000000000000; // The largest power of ten in an int64_t
+            for (; divisor > decimal; divisor /= 10);
+
             do {
-                char c = (char)(decimal % 10) + 48; // This gets us the digit in ASCII
+                char c = (char)((decimal / divisor) % 10) + 48; // This gets us the digit in ASCII
 
                 if (!maxrem)
                 {
@@ -146,8 +157,8 @@ int kprintf(const char* restrict format, ...) {
                     return -1;
 
                 written += 1;
-                decimal = decimal / 10;
-            } while (decimal > 10);
+                divisor /= 10;
+            } while (divisor > 0);
         }
         else if (*format == 'b')
         {

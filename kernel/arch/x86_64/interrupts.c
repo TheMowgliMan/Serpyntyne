@@ -2,9 +2,12 @@
 #include <terminal.h>
 #include <stdint.h>
 #include <memory.h>
+#include <util/random.h>
 
 void handle_interrupt(struct intframe* infr)
 {
+    rdtsc_seed_rand(); // Adds just a little more entropy
+
     char c[64];
     uint8_t type = 0;
     if (infr->vector < 32)

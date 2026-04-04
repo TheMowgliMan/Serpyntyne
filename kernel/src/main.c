@@ -5,6 +5,7 @@
 #include <terminal.h>
 #include <archinit.h>
 #include <util/random.h>
+#include <util/forthefunni.h>
 
 // Set the base revision to 6, this is recommended as this is the latest
 // base revision described by the Limine boot protocol specification.
@@ -25,7 +26,7 @@ static volatile uint64_t limine_requests_end_marker[] = LIMINE_REQUESTS_END_MARK
 // Halt and catch fire function.
 static void hcf(void) {
     for (;;) {
-        ;
+        asm volatile ("hlt");
     }
 }
 
@@ -39,19 +40,17 @@ void kmain(void) {
 	  hcf();
   }
 
-  seed_rand();
-
   termInit();
-  kputs("Serpyntyne 0.0.0\r\n");
+  kputs("Version 0.0.0\r\n");
   
   arch_preinit();
 
+  init_rand();
+
+  kprintf("Serpyntyne: %s \r\n", getStartMessage());
+
   // We're done, just hang...
   kerror("We're done, hanging...\r\n");
-
-  kprintf("%d %d %d \r\n", randrange(1, 10), randrange(1, 10), randrange(1, 10));
-
-  asm volatile ("int $0x09");
 
   hcf();
 }
