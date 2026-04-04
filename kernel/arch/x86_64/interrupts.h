@@ -4,30 +4,31 @@
 #include <stdint.h>
 #include <stddef.h>
 
-extern void isr0x00;
-extern void isr0x01;
-extern void isr0x02;
-extern void isr0x03;
-extern void isr0x04;
-extern void isr0x05;
-extern void isr0x06;
-extern void isr0x07;
-extern void isr0x08;
-extern void isr0x0A;
-extern void isr0x0B;
-extern void isr0x0C;
-extern void isr0x0D;
-extern void isr0x0E;
-extern void isr0x0F;
-extern void isr0x10;
-extern void isr0x11;
-extern void isr0x12;
-extern void isr0x13;
-extern void isr0x14;
-extern void isr0x15;
-extern void isr0x1C;
-extern void isr0x1D;
-extern void isr0x1E;
+extern void isr0x00(void);
+extern void isr0x01(void);
+extern void isr0x02(void);
+extern void isr0x03(void);
+extern void isr0x04(void);
+extern void isr0x05(void);
+extern void isr0x06(void);
+extern void isr0x07(void);
+extern void isr0x08(void);
+extern void isr0x09(void);
+extern void isr0x0A(void);
+extern void isr0x0B(void);
+extern void isr0x0C(void);
+extern void isr0x0D(void);
+extern void isr0x0E(void);
+extern void isr0x0F(void);
+extern void isr0x10(void);
+extern void isr0x11(void);
+extern void isr0x12(void);
+extern void isr0x13(void);
+extern void isr0x14(void);
+extern void isr0x15(void);
+extern void isr0x1C(void);
+extern void isr0x1D(void);
+extern void isr0x1E(void);
 
 struct intframe
 {

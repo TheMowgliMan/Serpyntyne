@@ -24,7 +24,7 @@ static volatile uint64_t limine_requests_end_marker[] = LIMINE_REQUESTS_END_MARK
 // Halt and catch fire function.
 static void hcf(void) {
     for (;;) {
-        asm ("hlt");
+        ;
     }
 }
 
@@ -45,5 +45,8 @@ void kmain(void) {
 
   // We're done, just hang...
   kerror("We're done, hanging...\r\n");
+
+  asm volatile ("int $0x09");
+
   hcf();
 }

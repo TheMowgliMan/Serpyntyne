@@ -1,5 +1,6 @@
 #include <stdarg.h>
 #include <limits.h>
+#include <stdbool.h>
 #include <flanterm.h>
 #include <memory.h>
 #include <limine.h>
@@ -133,7 +134,7 @@ int kprintf(const char* restrict format, ...) {
             format++;
             int64_t decimal = va_arg(parameters, int64_t);
             do {
-                char c = (char)(decimal % 10) + 48 // This gets us the digit in ASCII
+                char c = (char)(decimal % 10) + 48; // This gets us the digit in ASCII
 
                 if (!maxrem)
                 {
@@ -178,8 +179,8 @@ int kprintf(const char* restrict format, ...) {
 
             do
             {
-                char c = (char)(binary & 0xF) + 48;
-                if (char > 0x39) char += 39; // For characters a-f
+                char c = (char)(hexadecimal & 0xF) + 48;
+                if (c > 0x39) c += 39; // For characters a-f
 
                 if (!maxrem)
                 {

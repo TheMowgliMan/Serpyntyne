@@ -4,7 +4,7 @@
 
 .section .text
 
-extern handle_interrupt
+.extern handle_interrupt
 
 .macro push_registers
 push %rax
@@ -54,7 +54,7 @@ cli
 .global isr\vector
 isr\vector :
     pushq $0 # All end-of-interrupt code assumes that there is an error code on the top of the stack, or a parameter, so we push an irrelevant value.
-    pushq \vector
+    pushq $\vector
     push_registers
 
     dispatch
@@ -68,7 +68,7 @@ isr\vector :
 .global isr\vector
 isr\vector :
     # The error code is handled for us by the CPU.
-    pushq \vector
+    pushq $\vector
     push_registers
 
     dispatch
@@ -90,6 +90,7 @@ ISR 0x05 # Bound Range Exceeded
 ISR 0x06 # Invalid Opcode
 ISR 0x07 # Device not available
 ISRERR 0x08 # Double Fault
+ISR 0x09 # Coprocessor Segment Overrun (used as an unhandled interrupt handler)
 ISRERR 0x0A # Invalid TSS
 ISRERR 0x0B # Segment not Present
 ISRERR 0x0C # # Stack-Segment Fault
