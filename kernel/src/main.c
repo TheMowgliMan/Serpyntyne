@@ -4,6 +4,7 @@
 #include <limine.h>
 #include <terminal.h>
 #include <archinit.h>
+#include <util/random.h>
 
 // Set the base revision to 6, this is recommended as this is the latest
 // base revision described by the Limine boot protocol specification.
@@ -38,10 +39,14 @@ void kmain(void) {
 	  hcf();
   }
 
+  seed_rand();
+
   termInit();
   kputs("Serpyntyne 0.0.0\r\n");
   
   arch_preinit();
+
+  kprintf("%d %d %d %d %d", randrange(0, 255), randrange(0, 255), randrange(0, 255), randrange(0, 255), randrange(0, 255));
 
   // We're done, just hang...
   kerror("We're done, hanging...\r\n");
