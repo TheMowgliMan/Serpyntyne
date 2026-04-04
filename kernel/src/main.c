@@ -46,10 +46,10 @@ void kmain(void) {
   
   arch_preinit();
 
-  kprintf("%d %d %d %d %d", randrange(0, 255), randrange(0, 255), randrange(0, 255), randrange(0, 255), randrange(0, 255));
-
   // We're done, just hang...
   kerror("We're done, hanging...\r\n");
+
+  kprintf("%d %d %d \r\n", randrange(1, 10), randrange(1, 10), randrange(1, 10));
 
   asm volatile ("int $0x09");
 
