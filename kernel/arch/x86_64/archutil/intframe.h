@@ -31,30 +31,30 @@ struct intframe
     uint64_t ss;
 };
 
-uint8_t inline __attribute__((always_inline)) get_vector(struct intframe* iframe)
+inline uint8_t __attribute__((always_inline)) get_vector(struct intframe* iframe)
 {
     return (uint8_t)iframe->vector;
 }
 
-bool inline __attribute__((always_inline)) is_fatal(struct intframe* iframe)
+inline bool __attribute__((always_inline)) is_fatal(struct intframe* iframe)
 {
     uint8_t v = (uint8_t)iframe->vector;
     if (v == 0x2 || v == 0x8 || v == 0x0a || v == 0x0b || v == 0x0e) return true;
     return false;
 }
 
-bool inline __attribute__((always_inline)) is_exception(struct intframe* iframe)
+inline bool __attribute__((always_inline)) is_exception(struct intframe* iframe)
 {
     if (iframe->vector < 32) return true;
     return false;
 }
 
-uint64_t inline __attribute__((always_inline)) get_error_code(struct intframe* iframe)
+inline uint64_t __attribute__((always_inline)) get_error_code(struct intframe* iframe)
 {
     return iframe->err;
 }
 
-void inline __attribute__((always_inline)) print_registers(struct intframe* iframe)
+inline void __attribute__((always_inline)) print_registers(struct intframe* iframe)
 {
     kprintf("RIP: %x RSP: %x\r\n", (int64_t)iframe->rip, (int64_t)iframe->rsp);
     kprintf("RFlags: %b\r\n", (int64_t)iframe->rflags);

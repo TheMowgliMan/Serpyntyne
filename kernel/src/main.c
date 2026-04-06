@@ -52,7 +52,7 @@ void kmain(void) {
   // We're done, just hang...
   kerror("We're done, hanging...\r\n");
 
-  asm volatile ("int 0x0e");
+  asm volatile ("int $0x0e");
 
   hcf();
 }
