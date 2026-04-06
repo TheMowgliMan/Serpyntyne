@@ -64,7 +64,7 @@ char startup_notes[STARTUP_NOTES][32168] = {
     "snikety snek!"
 };
 
-char panic_notes[PANIC_NOTES][32168] = {
+char panic_notes[PANIC_NOTES][65536] = {
     "Houston, we have a problem!",
     "are you sure you want to lose your life, to the witch who has caused you nothing but strife?",
     "*rattles rattle*",
@@ -138,7 +138,7 @@ char panic_notes[PANIC_NOTES][32168] = {
     "it's fine, it was borrowed anyway.",
     "printer on fire, round two!",
     "at the disco!"
-}
+};
 
 char *getStartMessage(void)
 {
