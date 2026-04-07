@@ -52,8 +52,6 @@ void kmain(void) {
   // We're done, just hang...
   kerror("We're done, hanging...\r\n");
 
-  kprintf("%x %b", (int64_t)0x13F5A6B6, (int64_t)0b1101101101101011);
-
   asm volatile ("int $0x09");
 
   hcf();
