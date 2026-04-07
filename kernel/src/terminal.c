@@ -165,9 +165,13 @@ int kprintf(const char* restrict format, ...) {
             format++;
             uint64_t binary = (uint64_t)va_arg(parameters, int64_t);
 
+            uint8_t digit = 63;
+            bool writing = false;
+
             do
             {
-                char c = (char)(binary & 0x1) + 48;
+                char c = (char)((binary & (0b1ul << digit)) >> digit);
+                c += 48;
 
                 if (!maxrem)
                 {
@@ -175,22 +179,32 @@ int kprintf(const char* restrict format, ...) {
                     return -1;
                 }
 
-                if (!print(&c, sizeof(c)))
-                    return -1;
+                if (c != '0' || writing == true || digit == 0) {
+                    if (!print(&c, sizeof(c)))
+                        return -1;
 
-                written += 1;
-                binary = binary >> 1;
-            } while (binary > 0);
+                    written += 1;
+                    writing = true;
+                }
+
+                digit -= 1;
+            } while (digit != UINT8_MAX);
         }
         else if (*format == 'x')
         {
             format++;
             uint64_t hexadecimal = (uint64_t)va_arg(parameters, int64_t);
-            if (maxrem > 2) kputs("0x");
+
+            uint8_t digit = 15;
+            bool writing = false;
+
+            if (maxrem > 1) kputs("0x");
 
             do
             {
-                char c = (char)(hexadecimal & 0xF) + 48;
+                char c = (char)((hexadecimal & (0xFul << (digit * 4))) >> (digit * 4));
+                c += 48;
+
                 if (c > 0x39) c += 39; // For characters a-f
 
                 if (!maxrem)
@@ -199,12 +213,16 @@ int kprintf(const char* restrict format, ...) {
                     return -1;
                 }
 
-                if (!print(&c, sizeof(c)))
-                    return -1;
+                if (c != '0' || writing == true || digit == 0) {
+                    if (!print(&c, sizeof(c)))
+                        return -1;
+
+                    writing = true;
+                }
 
                 written += 1;
-                hexadecimal = hexadecimal >> 4;
-            } while (hexadecimal > 0);
+                digit -= 1;
+            } while (digit != UINT8_MAX);
         }
         else
         {
