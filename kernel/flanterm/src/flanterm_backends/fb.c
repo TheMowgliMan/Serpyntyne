@@ -1186,14 +1186,14 @@ struct flanterm_context *flanterm_fb_init(
             ctx->ansi_colours[i] = convert_colour(_ctx, ansi_colours[i]);
         }
     } else {
-        ctx->ansi_colours[0] = convert_colour(_ctx, 0x00000000); // black
-        ctx->ansi_colours[1] = convert_colour(_ctx, 0x00aa0000); // red
-        ctx->ansi_colours[2] = convert_colour(_ctx, 0x0000aa00); // green
-        ctx->ansi_colours[3] = convert_colour(_ctx, 0x00aa5500); // brown
-        ctx->ansi_colours[4] = convert_colour(_ctx, 0x000000aa); // blue
-        ctx->ansi_colours[5] = convert_colour(_ctx, 0x00aa00aa); // magenta
-        ctx->ansi_colours[6] = convert_colour(_ctx, 0x0000aaaa); // cyan
-        ctx->ansi_colours[7] = convert_colour(_ctx, 0x00aaaaaa); // grey
+        ctx->ansi_colours[0] = convert_colour(_ctx, 0x00020202); // black
+        ctx->ansi_colours[1] = convert_colour(_ctx, 0x00960018); // red
+        ctx->ansi_colours[2] = convert_colour(_ctx, 0x004d8d24); // green
+        ctx->ansi_colours[3] = convert_colour(_ctx, 0x008e460e); // brown
+        ctx->ansi_colours[4] = convert_colour(_ctx, 0x000086d4); // blue
+        ctx->ansi_colours[5] = convert_colour(_ctx, 0x00b00880); // magenta
+        ctx->ansi_colours[6] = convert_colour(_ctx, 0x0040aa96); // cyan
+        ctx->ansi_colours[7] = convert_colour(_ctx, 0x00c1b6aa); // grey
     }
 
     if (ansi_bright_colours != NULL) {
@@ -1201,38 +1201,38 @@ struct flanterm_context *flanterm_fb_init(
             ctx->ansi_bright_colours[i] = convert_colour(_ctx, ansi_bright_colours[i]);
         }
     } else {
-        ctx->ansi_bright_colours[0] = convert_colour(_ctx, 0x00555555); // black
-        ctx->ansi_bright_colours[1] = convert_colour(_ctx, 0x00ff5555); // red
-        ctx->ansi_bright_colours[2] = convert_colour(_ctx, 0x0055ff55); // green
-        ctx->ansi_bright_colours[3] = convert_colour(_ctx, 0x00ffff55); // brown
-        ctx->ansi_bright_colours[4] = convert_colour(_ctx, 0x005555ff); // blue
-        ctx->ansi_bright_colours[5] = convert_colour(_ctx, 0x00ff55ff); // magenta
-        ctx->ansi_bright_colours[6] = convert_colour(_ctx, 0x0055ffff); // cyan
-        ctx->ansi_bright_colours[7] = convert_colour(_ctx, 0x00ffffff); // grey
+        ctx->ansi_bright_colours[0] = convert_colour(_ctx, 0x00232638); // black
+        ctx->ansi_bright_colours[1] = convert_colour(_ctx, 0x00d43d00); // red
+        ctx->ansi_bright_colours[2] = convert_colour(_ctx, 0x009fbf00); // green
+        ctx->ansi_bright_colours[3] = convert_colour(_ctx, 0x00f99200); // brown
+        ctx->ansi_bright_colours[4] = convert_colour(_ctx, 0x007cc4e6); // blue
+        ctx->ansi_bright_colours[5] = convert_colour(_ctx, 0x00f4577c); // magenta
+        ctx->ansi_bright_colours[6] = convert_colour(_ctx, 0x00aee3b3); // cyan
+        ctx->ansi_bright_colours[7] = convert_colour(_ctx, 0x00fffff2); // grey
     }
 
     if (default_bg != NULL) {
         ctx->default_bg = convert_colour(_ctx, *default_bg);
     } else {
-        ctx->default_bg = 0x00000000; // background (black)
+        ctx->default_bg = 0x00020202; // background (black)
     }
 
     if (default_fg != NULL) {
         ctx->default_fg = convert_colour(_ctx, *default_fg);
     } else {
-        ctx->default_fg = convert_colour(_ctx, 0x00aaaaaa); // foreground (grey)
+        ctx->default_fg = convert_colour(_ctx, 0x00fffff2); // foreground (grey)
     }
 
     if (default_bg_bright != NULL) {
         ctx->default_bg_bright = convert_colour(_ctx, *default_bg_bright);
     } else {
-        ctx->default_bg_bright = convert_colour(_ctx, 0x00555555); // background (black)
+        ctx->default_bg_bright = convert_colour(_ctx, 0x00554e54); // background (black)
     }
 
     if (default_fg_bright != NULL) {
         ctx->default_fg_bright = convert_colour(_ctx, *default_fg_bright);
     } else {
-        ctx->default_fg_bright = convert_colour(_ctx, 0x00ffffff); // foreground (grey)
+        ctx->default_fg_bright = convert_colour(_ctx, 0x00fffff2); // foreground (grey)
     }
 
     ctx->text_fg = ctx->default_fg;

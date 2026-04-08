@@ -6,6 +6,7 @@
 #include <archinit.h>
 #include <util/random.h>
 #include <util/forthefunni.h>
+#include <util/atomics.h>
 
 // Set the base revision to 6, this is recommended as this is the latest
 // base revision described by the Limine boot protocol specification.
@@ -51,8 +52,6 @@ void kmain(void) {
 
   // We're done, just hang...
   kerror("We're done, hanging...\r\n");
-
-  asm volatile ("int $0x09");
 
   hcf();
 }

@@ -17,3 +17,21 @@ void panic(struct intframe* iframe)
 
     kernel_abort();
 }
+
+void exception(uint64_t reason, int64_t data1, int64_t data2)
+{
+    kprintf("\033[41mKernel Exception: %s\r\n\033[41m", getPanicMessage());
+    kprintf("Reason: %x ", (int64_t)reason);
+
+    if (reason == SPINLOCK_LONG_HOLD)
+    {
+        kprintf("(SPINLOCK_LONG_HOLD)\r\n");
+        kprintf("A spinlock was held for an extremely long time. It was held by process #%d with %d attempts of acquiring it.\r\n", (int64_t)data2, (int64_t)data1);
+
+        if (data2 == 0)
+        {
+            kprintf("The spinlock was held by the kernel; as such, a system lockup is likely.\r\nThe system is aborting, restart it manually.\r\n");
+            kernel_abort();
+        }
+    }
+}

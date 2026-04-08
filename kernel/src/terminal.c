@@ -44,6 +44,8 @@ void termInit()
         0,
         0
     );
+
+    kputs("\033[0;37m");
 }
 
 void kputs(const char* msg)
@@ -66,10 +68,7 @@ char kputchar(int c)
 }
 
 static bool print(const char* data, size_t length) {
-    const unsigned char* bytes = (const unsigned char*) data;
-    for (size_t i = 0; i < length; i++)
-        if (kputchar(bytes[i]) == EOF)
-            return false;
+    flanterm_write(ft_ctx, data, length);
     return true;
 }
 
@@ -134,31 +133,42 @@ int kprintf(const char* restrict format, ...) {
             format++;
             int64_t decimal = va_arg(parameters, int64_t);
 
-            if (decimal < 0)
+            if (decimal == 0)
             {
-                decimal *= -1;
-
-                if (maxrem > 0) kputs("-");
+                if (maxrem > 0) kputs("0");
+                written++;
             }
-
-            uint64_t divisor = 1000000000000000000; // The largest power of ten in an int64_t
-            for (; divisor > decimal; divisor /= 10);
-
-            do {
-                char c = (char)((decimal / divisor) % 10) + 48; // This gets us the digit in ASCII
-
-                if (!maxrem)
+            else
+            {
+                if (decimal < 0)
                 {
-                    // TODO: Set errno to EOVERFLOW.
-                    return -1;
+                    decimal *= -1;
+
+                    if (maxrem > 0) kputs("-");
+                    written++;
+                    maxrem = INT_MAX - written;
                 }
 
-                if (!print(&c, sizeof(c)))
-                    return -1;
+                int64_t divisor = 1000000000000000000; // The largest power of ten in an int64_t
+                for (; divisor > decimal; divisor /= 10);
 
-                written += 1;
-                divisor /= 10;
-            } while (divisor > 0);
+                do {
+                    char c = (char)((decimal / divisor) % 10) + 48; // This gets us the digit in ASCII
+
+                    if (!maxrem)
+                    {
+                        // TODO: Set errno to EOVERFLOW.
+                        return -1;
+                    }
+
+                    if (!print(&c, sizeof(c)))
+                        return -1;
+
+                    written += 1;
+                    maxrem = INT_MAX - written;
+                    divisor /= 10;
+                } while (divisor > 0);
+            }
         }
         else if (*format == 'b')
         {
