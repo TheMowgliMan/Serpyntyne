@@ -24,12 +24,9 @@ void acquireSpinlock(spinlock_t *lock, uint32_t pid)
                 break;
             }
 
-            uint32_t count = get_open_attempts(lock);
-            kprintf("%d\r\n", (int64_t)count);
-
             increment_open_attempts(lock);
 
-            if (count > 5) return; // exception(SPINLOCK_LONG_HOLD, (int64_t)count, (int64_t)get_owner_pid(lock));
+            if (count > 1000000000) exception(SPINLOCK_LONG_HOLD, (int64_t)count, (int64_t)get_owner_pid(lock));
         }
     }
 
