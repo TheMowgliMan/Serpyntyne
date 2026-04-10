@@ -6,6 +6,7 @@
 #include <limine.h>
 #include <flanterm_backends/fb.h>
 #include <terminal.h>
+#include <util/atomics.h>
 
 __attribute__((used, section(".limine_requests")))
 static volatile struct limine_framebuffer_request framebuffer_request = {
@@ -15,6 +16,9 @@ static volatile struct limine_framebuffer_request framebuffer_request = {
 
 struct limine_framebuffer *framebuffer = NULL;
 struct flanterm_context *ft_ctx = NULL;
+
+spinlock_t terminal_lock;
+spinlock_t *term_lock = &terminal_lock;
 
 void termInit()
 {
@@ -45,12 +49,16 @@ void termInit()
         0
     );
 
+    initSpinlock(term_lock);
+
     kputs("\033[0;37m");
 }
 
 void kputs(const char* msg)
 {
+    acquireSpinlock(term_lock, 0);
     flanterm_write(ft_ctx, msg, strlen(msg));
+    releaseSpinlock(term_lock);
 }
 
 void kerror(const char *msg)
@@ -63,12 +71,16 @@ void kerror(const char *msg)
 char kputchar(int c)
 {
     char cc = (char)c;
+    acquireSpinlock(term_lock, 0);
     flanterm_write(ft_ctx, &cc, 1);
+    releaseSpinlock(term_lock);
     return cc;
 }
 
 static bool print(const char* data, size_t length) {
+    acquireSpinlock(term_lock, 0);
     flanterm_write(ft_ctx, data, length);
+    releaseSpinlock(term_lock);
     return true;
 }
 

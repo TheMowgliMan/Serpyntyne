@@ -7,34 +7,39 @@
 
 void initSpinlock(spinlock_t *lock)
 {
-    lock->lock = 0x0000000000000000;
+    __atomic_store_n(&lock->lock, 0, __ATOMIC_RELAXED);
     lock->open_attempts = 0;
+    lock->owner_pid = 0;
 }
 
 void acquireSpinlock(spinlock_t *lock, uint32_t pid)
 {
-    if ((lock->lock & ~SPINLOCK_LOCK_MASK) == 1) // Locked!
+    if (pid = lock->owner_pid) return;
+
+    while (true)
     {
-        while (true)
-        {
+        while (__atomic_load_n(&lock->lock, __ATOMIC_RELAXED))
             pause();
 
-            if ((lock->lock & ~SPINLOCK_LOCK_MASK) == 0)
-            {
-                break;
-            }
+        if (!__atomic_exchange_n(&lock->lock, 1, __ATOMIC_ACQUIRE))
+            break;
 
-            increment_open_attempts(lock);
+        increment_open_attempts(lock);
 
-            if (count > 1000000000) exception(SPINLOCK_LONG_HOLD, (int64_t)count, (int64_t)get_owner_pid(lock));
-        }
+        if (count > 1000000000) exception(SPINLOCK_LONG_HOLD, (int64_t)count, (int64_t)get_owner_pid(lock));
     }
 
-    lock->lock = (atomic_ulint_t)(~SPINLOCK_LOCK_MASK);
     set_owner_pid(lock, pid);
 }
 
 void releaseSpinlock(spinlock_t *lock)
 {
-    initSpinlock(lock);
+    __atomic_store_n(&lock->lock, 0, __ATOMIC_RELEASE);
+    lock->open_attempts = 0;
+    lock->owner_pid = 0;
+}
+
+void testSpinlock(spinlock_t *lock)
+{
+    return __atomic_load_n(&lock->lock, __ATOMIC_RELAXED);
 }
