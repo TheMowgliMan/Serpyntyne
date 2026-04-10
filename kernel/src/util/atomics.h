@@ -1,6 +1,8 @@
 #ifndef ATOMICS_H_
 #define ATOMICS_H_
 
+#include <stdint.h>
+
 typedef _Atomic(unsigned long int) atomic_ulint_t;
 typedef _Atomic(unsigned int) atomic_uint_t;
 
@@ -38,6 +40,6 @@ inline void __attribute__((always_inline)) increment_open_attempts(spinlock_t *l
 void initSpinlock(spinlock_t *lock);
 void acquireSpinlock(spinlock_t *lock, uint32_t pid);
 void releaseSpinlock(spinlock_t *lock);
-void testSpinlock(spinlock_t *lock);
+uint64_t testSpinlock(spinlock_t *lock);
 
 #endif

@@ -4,6 +4,7 @@
 #include <archutil/asmstubs.h>
 #include <util/panic.h>
 #include <terminal.h>
+#include <stdint.h>
 
 void initSpinlock(spinlock_t *lock)
 {
@@ -14,7 +15,7 @@ void initSpinlock(spinlock_t *lock)
 
 void acquireSpinlock(spinlock_t *lock, uint32_t pid)
 {
-    if (pid = lock->owner_pid) return;
+    if (pid == lock->owner_pid) return;
 
     while (true)
     {
@@ -26,6 +27,7 @@ void acquireSpinlock(spinlock_t *lock, uint32_t pid)
 
         increment_open_attempts(lock);
 
+        uint32_t count = get_open_attempts(lock);
         if (count > 1000000000) exception(SPINLOCK_LONG_HOLD, (int64_t)count, (int64_t)get_owner_pid(lock));
     }
 
@@ -39,7 +41,7 @@ void releaseSpinlock(spinlock_t *lock)
     lock->owner_pid = 0;
 }
 
-void testSpinlock(spinlock_t *lock)
+uint64_t testSpinlock(spinlock_t *lock)
 {
     return __atomic_load_n(&lock->lock, __ATOMIC_RELAXED);
 }

@@ -37,7 +37,7 @@ endif
 CFLAGS := -g -O2 -pipe
 
 # User controllable C preprocessor flags. We set none by default.
-CPPFLAGS :=
+CPPFLAGS := -DDEBUG
 
 # User controllable nasm flags.
 NASMFLAGS := -g

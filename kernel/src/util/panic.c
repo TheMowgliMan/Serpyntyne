@@ -34,4 +34,11 @@ void exception(uint64_t reason, int64_t data1, int64_t data2)
             kernel_abort();
         }
     }
+
+    if (reason == NO_MEMORY)
+    {
+        kprintf("(NO_MEMORY)\r\n");
+        kprintf("There was no memory available to the system to use.\r\nThe system is aborting, please restart it manually.\r\n");
+        kernel_abort();
+    }
 }

@@ -7,6 +7,7 @@
 #include <util/random.h>
 #include <util/forthefunni.h>
 #include <util/atomics.h>
+#include <mm/pmm.h>
 
 // Set the base revision to 6, this is recommended as this is the latest
 // base revision described by the Limine boot protocol specification.
@@ -49,6 +50,9 @@ void kmain(void) {
   init_rand();
 
   kprintf("Serpyntyne: %s \r\n", getStartMessage());
+
+  uint64_t free_ram = initPmm();
+  kprintf("Free RAM: %d bytes\r\n", (int64_t)free_ram);
 
   // We're done, just hang...
   kerror("We're done, hanging...\r\n");
