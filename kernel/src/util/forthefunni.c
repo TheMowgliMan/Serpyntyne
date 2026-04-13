@@ -119,7 +119,9 @@ char panic_notes[PANIC_NOTES][65536] = {
     "we have come to call about your car's extended warranty!",
     "it's fine, it was borrowed anyway.",
     "printer on fire, round two!",
-    "at the disco!"
+    "at the disco!",
+    "but I can't make an exception for you!",
+    "b l u e   s c r e e n   o f   d e a t h   (not)"
 };
 
 char *getStartMessage(void)
