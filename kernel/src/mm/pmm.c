@@ -1,5 +1,5 @@
 #include <mm/pmm.h>
-#include <limine.h>
+#include <util/liminereq.h>
 #include <terminal.h>
 #include <util/panic.h>
 #include <stdint.h>
@@ -8,48 +8,37 @@
 #include <util/align.h>
 #include <archutil/defines.h>
 #include <stdbool.h>
+#include <memory.h>
 
-__attribute__((used, section(".limine_requests")))
-static volatile struct limine_memmap_request memmap_request = {
-    .id = LIMINE_MEMMAP_REQUEST_ID,
-    .revision = 0
-};
+/*
+ * I call this doohickey a "curtain allocator," but somebody probably already has a name for this so please tell me if so.
+ * The "curtain" is the whole allocator.
+ * The "frame" is an array of pointers to the threads.
+ * The "threads" are singly linked lists of beads (this is where the spinlocks are).
+ * The "beads" are individual linked list nodes.
+ */
 
-__attribute__((used, section(".limine_requests")))
-static volatile struct limine_hhdm_request hhdm_request = {
-    .id = LIMINE_HHDM_REQUEST_ID,
-    .revision = 0
-};
+struct pmmFreePageSllNode **frame = NULL;
+spinlock_t *thread_locks;
+uint64_t frame_len = 0;
 
-struct limine_memmap_response *memmap_response;
-struct limine_hhdm_response *hhdm_response;
+struct randomInstance pmm_randomness;
 
-struct pmmFreePageSllNode* low_frames; // For below 4GiB allocations
-struct pmmFreePageSllNode* small_high_frames; // For above 4GiB allocations, in PAGE_SIZE chunks
-struct pmmFreePageSllNode* large_high_frames; // For above 4GiB allocations, in LARGE_PAGE_SIZE chunks
-
-spinlock_t lfl;
-spinlock_t shfl;
-spinlock_t lhfl;
-
-spinlock_t *low_frame_lock = &lfl;
-spinlock_t *small_high_frame_lock = &shfl;
-spinlock_t *large_high_frame_lock = &lhfl;
-
-void fill_free_lists(void)
+void fill_free_lists(uint64_t ram)
 {
-    acquireSpinlock(low_frame_lock, 0);
-    acquireSpinlock(small_high_frame_lock, 0);
-    acquireSpinlock(large_high_frame_lock, 0);
+    /*
+     * To store the threads of the curtain, we need to allocate some pages via hhdm.
+     * We need pages_to_allocate of each.
+     */
+    uint64_t pages_to_allocate = (ram + 0x3FFFFFFFull) / 0x40000000ull // Divide and round up
+    frame_len = pages_to_allocate * (PAGE_SIZE / ARCH_POINTER_WIDTH);
 
-    low_frames = NULL;
-    small_high_frames = NULL;
-    large_high_frames = NULL;
+    // This is used to temporarily store pages before the "curtain" is "hanged".
+    struct pmmFreePageSllNode *pages = NULL;
 
-    uint32_t low_frames_added = 0;
-    uint32_t small_high_frames_added = 0;
-    uint32_t large_high_frames_added = 0;
+    uint32_t pages_added = 0; // For statistical purposes
 
+    // Now we fill the "pages" list.
     for (uint64_t fill_entry = 0; fill_entry < memmap_response->entry_count; fill_entry++)
     {
         uint64_t entry_offset = 0;
@@ -72,31 +61,13 @@ void fill_free_lists(void)
             uint64_t addr = entry_struct->base + entry_offset;
             struct pmmFreePageSllNode *node = (struct pmmFreePageSllNode*)(addr + hhdm_response->offset);
 
-            if (addr + PAGE_SIZE < LOW_MEM_BOUNDARY)
+            if (addr + PAGE_SIZE < end)
             {
                 node->size = 0;
-                node->next = low_frames;
-                low_frames = node;
+                node->next = pages;
+                pages = node;
 
-                low_frames_added++;
-                entry_offset += PAGE_SIZE;
-            }
-            else if (addr + LARGE_PAGE_SIZE < end && randrange(0, CREATE_LARGE_PAGE_CHANCE) == 0) // Feels like OSDev Discord ragebait right here
-            {
-                node->size = LARGE_PAGE_SIZE_EXPONENT;
-                node->next = large_high_frames;
-                large_high_frames = node;
-
-                large_high_frames_added++;
-                entry_offset += LARGE_PAGE_SIZE;
-            }
-            else if (addr + PAGE_SIZE < end)
-            {
-                node->size = 0;
-                node->next = small_high_frames;
-                small_high_frames = node;
-
-                small_high_frames_added++;
+                pages_added++;
                 entry_offset += PAGE_SIZE;
             }
             else
@@ -107,145 +78,105 @@ void fill_free_lists(void)
     }
 
 #ifdef DEBUG
-    kprintf("Frames allocated:\r\nLow frames: %d\r\nSmall frames: %d\r\nLarge frames: %d\r\n",
-            (int64_t)low_frames_added,
-            (int64_t)small_high_frames_added,
-            (int64_t)large_high_frames_added);
+    kprintf("Frames allocated: %d\r\n",
+            (int64_t)pages_added);
+#endif
+    /*
+     * Now we have to allocate two sets of pages_to_allocate contiguous pages.
+     * As there's hardly anything in memory, however, this should be easy to fulfill.
+     */
+    struct pmmFreePageSllNode *cur;
+    for (uint32_t i = 0; i < pages_to_allocate; i++)
+    {
+        cur = pages;
+        if ((uint64_t)(cur) - (uint64_t)(cur->next) != PAGE_SIZE)
+        {
+            i = 0;
+        }
+
+        pages = cur->next;
+
+        if (pages == NULL || pages == 0) exception(OUT_OF_MEMORY, OOM_PMM_FRAME_CREATON, 0);
+    }
+
+    frame = (pmmFreePageSllNode**)(cur);
+    memset(frame, 0, pages_to_allocate * PAGE_SIZE);
+
+    /* Now for the spinlocks. */
+    for (uint64_t i = 0; i < pages_to_allocate; i++)
+    {
+        cur = pages;
+        if ((uint64_t)(cur) - (uint64_t)(cur->next) != PAGE_SIZE)
+        {
+            i = 0;
+        }
+
+        pages = cur->next;
+
+        if (pages == NULL || pages == 0) exception(OUT_OF_MEMORY, OOM_PMM_SPINLOCKS_CREATON, 0);
+    }
+
+    /* The spinlocks also have to be initialized. */
+    thread_locks = (spinlock_t*)(cur);
+    for (uint64_t i = 0; i < (pages_to_allocate * 4096) / LOCK_SIZE; i++)
+    {
+        initSpinlock(&thread_locks[i]);
+    }
+
+    /*
+     * Now that we've created a frame-array, we populate it from the freelist!
+     * Nothing has to be done for the spinlocks here.
+     */
+    for (
+        struct pmmFreePageSllNode *pop_frame = pages;
+        pop_frame != NULL;
+        pop_frame = pop_frame->next;
+    )
+    {
+        uint64_t idx = (uint64_t)pop_frame / THREAD_ADDRESS_RANGE;
+        if (frame[idx] == 0 || frame[idx] == NULL)
+        {
+            frame[idx] = pop_frame;
+            frame[idx]->next = NULL;
+        }
+        else
+        {
+            struct pmmFreePageSllNode *tmp = pop_frame;
+            tmp->next = frame[idx];
+            frame[idx] = tmp;
+        }
+    }
+
+    /*
+     * And now we should be all done!
+     * Now that the pages have been added to the threads and the spinlocks initialized,
+     * there is not much left to do. We will initialize pmm_randomness now.
+     */
+
+#ifdef DEBUG
+    kprintf("Finished filling curtain allocator!\r\n");
 #endif
 
-    releaseSpinlock(low_frame_lock);
-    releaseSpinlock(small_high_frame_lock);
-    releaseSpinlock(large_high_frame_lock);
+    init_rand_instance(&pmm_randomness);
 }
 
-uintptr_t phys_to_hhdm(uint64_t addr)
+uint64_t ask_for_thread_denoter(void)
+{
+    return randrange_instance(&pmm-pmm_randomness, frame_len / 2, frame_len);
+}
+
+inline uintptr_t __attribute__((force_inline)) phys_to_hhdm(uint64_t addr)
 {
     return (uintptr_t)(addr + hhdm_response->offset);
 }
 
-uint64_t hhdm_to_phys(uintptr_t hhdm_addr)
+inline uint64_t __attribute__((force_inline)) hhdm_to_phys (uintptr_t hhdm_addr)
 {
     return (uint64_t)(hhdm_addr - hhdm_response->offset);
 }
 
-struct physFrame allocateFrame(frame_type_t type)
-{
-    struct pmmFreePageSllNode *node;
-    struct physFrame ret;
-
-    if (type == NORMAL_FRAME)
-    {
-        acquireSpinlock(small_high_frame_lock, 0);
-
-        if (small_high_frames == NULL)
-        {
-            acquireSpinlock(low_frame_lock, 0);
-
-            if (low_frames == NULL)
-            {
-                ret.phys_addr = 0;
-                return ret;
-            }
-
-            node = low_frames;
-            low_frames = node->next;
-            releaseSpinlock(low_frame_lock);
-
-            ret.is_low = true;
-        }
-        else
-        {
-            node = small_high_frames;
-            small_high_frames = node->next;
-
-            ret.is_low = false;
-        }
-
-        releaseSpinlock(small_high_frame_lock);
-    }
-    else if (type == LARGE_FRAME)
-    {
-        acquireSpinlock(large_high_frame_lock, 0);
-
-        if (large_high_frames == NULL)
-        {
-            ret.phys_addr = 0;
-            return ret;
-        }
-
-        node = large_high_frames;
-        large_high_frames = node->next;
-        releaseSpinlock(large_high_frame_lock);
-
-        ret.is_low = false;
-    }
-    else if (type == LOW_FRAME)
-    {
-        acquireSpinlock(low_frame_lock, 0);
-
-        if (low_frames == NULL)
-        {
-            ret.phys_addr = 0;
-            return ret;
-        }
-
-        node = low_frames;
-        low_frames = node->next;
-        releaseSpinlock(low_frame_lock);
-
-        ret.is_low = true;
-    }
-
-    ret.phys_addr = (uint64_t)((uintptr_t)node - hhdm_response->offset);
-    ret.size = node->size;
-
-    return ret;
-}
-
-void freeFrame(struct physFrame frame)
-{
-    if (frame.is_low)
-    {
-        if (frame.size != 0) exception(BAD_FRAME_SIZE, frame.size, (int64_t)frame.phys_addr);
-
-        acquireSpinlock(low_frame_lock, 0);
-
-        struct pmmFreePageSllNode *node = (struct pmmFreePageSllNode*)(frame.phys_addr + hhdm_response->offset);
-        node->size = frame.size;
-
-        node->next = low_frames;
-        low_frames = node;
-    }
-    else if (frame.size != 0 && frame.size != LARGE_PAGE_SIZE_EXPONENT)
-        exception(BAD_FRAME_SIZE, frame.size, (int64_t)frame.phys_addr);
-
-    bool is_large = false;
-    if (frame.size == LARGE_PAGE_SIZE_EXPONENT) is_large = true;
-
-    if (is_large) acquireSpinlock(large_high_frame_lock, 0); else acquireSpinlock(small_high_frame_lock, 0);
-
-    struct pmmFreePageSllNode *node = (struct pmmFreePageSllNode*)(frame.phys_addr + hhdm_response->offset);
-    node->size = frame.size;
-
-    if (is_large) node->next = large_high_frames; else node->next = small_high_frames;
-    if (is_large) large_high_frames = node; else small_high_frames = node;
-
-    if (is_large) releaseSpinlock(large_high_frame_lock); else releaseSpinlock(small_high_frame_lock);
-}
-
 uint64_t initPmm(void)
 {
-    if (memmap_request.response == NULL) exception(NO_MEMORY, 0, 0);
-
-    if (hhdm_request.response == NULL) exception(NO_HHDM, 0, 0);
-
-    memmap_response = memmap_request.response;
-    hhdm_response = hhdm_request.response;
-
-    initSpinlock(low_frame_lock);
-    initSpinlock(small_high_frame_lock);
-    initSpinlock(large_high_frame_lock);
-
     uint64_t ram = 0;
     for (uint64_t i = 0; i < memmap_response->entry_count; i++)
     {
@@ -261,7 +192,7 @@ uint64_t initPmm(void)
         }
     }
 
-    fill_free_lists();
+    fill_free_lists(ram);
 
     return ram;
 }

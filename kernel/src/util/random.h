@@ -2,6 +2,12 @@
 #define RANDOM_H_
 
 #include <stdint.h>
+#include <atomics.h>
+
+struct randomInstance {
+    uint64_t seed;
+    spinlock_t lock;
+}
 
 void init_rand(void);
 void rdtsc_seed_rand(void);

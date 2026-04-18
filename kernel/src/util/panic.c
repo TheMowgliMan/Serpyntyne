@@ -39,7 +39,7 @@ void exception(uint64_t reason, int64_t data1, int64_t data2)
     if (reason == NO_MEMORY)
     {
         kprintf("(NO_MEMORY)\r\n");
-        kprintf("There was no memory available to the system to use.\r\nThe system is aborting, please restart it manually.\r\n");
+        kprintf("There was no memory available to the system to use for the allocator.\r\nThe system is aborting, please restart it manually.\r\n");
         kernel_abort();
     }
 
@@ -55,8 +55,37 @@ void exception(uint64_t reason, int64_t data1, int64_t data2)
         kprintf("(BAD_FRAME_SIZE)\r\n");
         kprintf("A bad frame at physical address %x was reported with size %d (%d bytes), which is not supported by this architecture (" ARCH_NAME ").\r\n",
                 data2, data1, (int64_t)((1ull << data1) * PAGE_SIZE));
-        kprintf("This architecture supports pages of size %d or %d. The system is aborting, please restart it manually\r\n",
+        kprintf("This architecture supports pages of size %d or %d. The system is aborting, please restart it manually.\r\n",
                 0ll, (int64_t)(LARGE_PAGE_SIZE_EXPONENT));
+        kernel_abort();
+    }
+
+    if (reason == ILLEGAL_PAGE_MAP_SIZE)
+    {
+        kprintf("(ILLEGAL_PAGE_MAP_SIZE)\r\n");
+        kprintf("A map to a page of an impossible size (%d) was requested for virtual address %x.\r\nThe system is aborting, please restart it manually.\r\n",
+                data1, data2);
+        kernel_abort();
+    }
+
+    if (reason == OUT_OF_MEMORY)
+    {
+        kprintf("(OUT_OF_MEMORY)\r\n");
+        kprintf("The system ran out of memory during a critical operation. See below for more details.\r\nThe system is aborting, please restart it manually\r\n");
+        kprintf("Cause: ")
+
+        switch (data1)
+        {
+            case OOM_PMM_FRAME_CREATION:
+                kprintf("(OOM_PMM_FRAME_CREATION)\r\nNo place was found for physical memory manager frame data.\r\n");
+                break;
+            case OOM_PMM_SPINLOCKS_CREATION:
+                kprintf("(OOM_PMM_SPINLOCKS_CREATION)\r\nNo place was found for physical memory manager spinlocks.\r\n");
+                break;
+            default:
+                kprintf("(other cause)\r\nNo memory was found for a miscellanious system operation.\r\nWhen the cause is determined, please submit for it to be added to the panic list.\r\n");
+        }
+
         kernel_abort();
     }
 }

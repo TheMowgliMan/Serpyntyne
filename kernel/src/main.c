@@ -1,29 +1,14 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
+
+#include <util/liminereq.h>
 #include <limine.h>
+
 #include <terminal.h>
 #include <archinit.h>
-#include <util/random.h>
 #include <util/forthefunni.h>
-#include <util/atomics.h>
-#include <mm/pmm.h>
-
-// Set the base revision to 6, this is recommended as this is the latest
-// base revision described by the Limine boot protocol specification.
-// See specification for further info.
-
-__attribute__((used, section(".limine_requests")))
-static volatile uint64_t limine_base_revision[] = LIMINE_BASE_REVISION(6);
-
-// Finally, define the start and end markers for the Limine requests.
-// These can also be moved anywhere, to any .c file, as seen fit.
-
-__attribute__((used, section(".limine_requests_start")))
-static volatile uint64_t limine_requests_start_marker[] = LIMINE_REQUESTS_START_MARKER;
-
-__attribute__((used, section(".limine_requests_end")))
-static volatile uint64_t limine_requests_end_marker[] = LIMINE_REQUESTS_END_MARKER;
+#include <util/postinit.h>
 
 // Halt and catch fire function.
 static void hcf(void) {
@@ -36,23 +21,13 @@ static void hcf(void) {
 // If renaming kmain() to something else, make sure to change the
 // linker script accordingly.
 void kmain(void) {
-  // Ensure the bootloader actually understands our base revision (see spec).
-  if (LIMINE_BASE_REVISION_SUPPORTED(limine_base_revision) == false)
-  {
-	  hcf();
-  }
-
-  termInit();
+  initializeLimineRequests();
   kputs("Version 0.0.0\r\n");
   
   arch_preinit();
-
-  init_rand();
+  postInit();
 
   kprintf("Serpyntyne: %s \r\n", getStartMessage());
-
-  uint64_t free_ram = initPmm();
-  kprintf("Free RAM: %d bytes\r\n", (int64_t)free_ram);
 
   // We're done, just hang...
   kerror("We're done, hanging...\r\n");

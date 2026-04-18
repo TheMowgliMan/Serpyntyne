@@ -5,7 +5,7 @@
 #include <stdbool.h>
 #include <archutil/defines.h>
 
-#define CREATE_LARGE_PAGE_CHANCE 256 // One in <this + 1> chance
+#define THREAD_ADDRESS_RANGE (PAGE_SIZE * (PAGE_SIZE / ARCH_POINTER_WIDTH))
 
 struct pmmFreePageSllNode {
     struct pmmFreePageSllNode *next;
@@ -13,7 +13,7 @@ struct pmmFreePageSllNode {
 };
 
 struct physFrame {
-    uint64_t phys_addr;
+    uintptr_t phys_addr;
     uint8_t size; // The size in bytes is 2 ^ <size> * PAGE_SIZE (from archutil/defines.h)
     bool is_low;
 };

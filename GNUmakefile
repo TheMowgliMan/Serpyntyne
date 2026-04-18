@@ -4,7 +4,7 @@
 # Use MQ="-d int -debugcon stdio" if problems
 MQ :=
 # Default user QEMU flags. These are appended to the QEMU command calls.
-QEMUFLAGS := -m 2G -no-reboot $(MQ)
+QEMUFLAGS := -m 6G -no-reboot $(MQ)
 
 override IMAGE_NAME := serpyntyne
 

@@ -3,42 +3,25 @@
 #include <stdbool.h>
 #include <flanterm.h>
 #include <memory.h>
-#include <limine.h>
+#include <util/liminereq.h>
 #include <flanterm_backends/fb.h>
 #include <terminal.h>
 #include <util/atomics.h>
 
-__attribute__((used, section(".limine_requests")))
-static volatile struct limine_framebuffer_request framebuffer_request = {
-    .id = LIMINE_FRAMEBUFFER_REQUEST_ID,
-    .revision = 0
-};
-
-struct limine_framebuffer *framebuffer = NULL;
-struct flanterm_context *ft_ctx = NULL;
-
 spinlock_t terminal_lock;
 spinlock_t *term_lock = &terminal_lock;
 
+struct flanterm_context *ft_ctx = NULL;
+
 void termInit()
 {
-    // Ensure we got a framebuffer.
-    if (framebuffer_request.response == NULL
-        || framebuffer_request.response->framebuffer_count < 1)
-    {
-        for (;;) {;}
-    }
-
-    // Fetch the first framebuffer.
-    framebuffer = framebuffer_request.response->framebuffers[0];
-
     ft_ctx = flanterm_fb_init(
         NULL,
         NULL,
-        framebuffer->address, framebuffer->width, framebuffer->height, framebuffer->pitch,
-        framebuffer->red_mask_size, framebuffer->red_mask_shift,
-        framebuffer->green_mask_size, framebuffer->green_mask_shift,
-        framebuffer->blue_mask_size, framebuffer->blue_mask_shift,
+        limine_framebuffer_ctx->address, limine_framebuffer_ctx->width, limine_framebuffer_ctx->height, limine_framebuffer_ctx->pitch,
+        limine_framebuffer_ctx->red_mask_size, limine_framebuffer_ctx->red_mask_shift,
+        limine_framebuffer_ctx->green_mask_size, limine_framebuffer_ctx->green_mask_shift,
+        limine_framebuffer_ctx->blue_mask_size, limine_framebuffer_ctx->blue_mask_shift,
         NULL,
         NULL, NULL,
         NULL, NULL,
