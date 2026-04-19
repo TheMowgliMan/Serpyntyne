@@ -18,12 +18,16 @@ struct physFrame {
     bool is_low;
 };
 
-enum frame_type { NORMAL_FRAME, LARGE_FRAME, LOW_FRAME };
-typedef enum frame_type frame_type_t;
-
 uint64_t initPmm(void);
 
-struct physFrame allocateFrame(frame_type_t type);
-void freeFrame(struct physFrame frame);
+struct physFrame allocate_page_generic(uint64_t thread_denoter);
+struct physFrame allocate_page_random(struct randomInstance *ri);
+
+uint64_t ask_for_thread_denoter(void);
+bool should_get_new_thread_denoter(uint64_t td);
+
+inline uintptr_t __attribute__((force_inline)) phys_to_hhdm(uint64_t addr);
+inline uint64_t __attribute__((force_inline)) hhdm_to_phys (uintptr_t hhdm_addr);
+inline bool __attribute__((force_inline)) is_valid_frame(struct physFrame *f);
 
 #endif

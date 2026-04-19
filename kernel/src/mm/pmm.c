@@ -160,9 +160,87 @@ void fill_free_lists(uint64_t ram)
     init_rand_instance(&pmm_randomness);
 }
 
+struct physFrame allocate_page_generic(uint64_t thread_denoter)
+{
+    for (uint64_t i = 0, i < frame_len, i++)
+    {
+        uint64_t grab = (i + thread_denoter) % frame_len;
+
+        acquireSpinlock(&thread_locks[grab]);
+
+        if (frame[grab] != 0 && frame[grab] != NULL)
+        {
+            struct pmmFreePageSllNode *node = frame[grab];
+            frame[grab] = node->next;
+
+            struct physFrame ret;
+            ret.phys_addr = (uintptr_t)node - (uintptr_t)(hhdm_response->offset);
+            ret.size = 0;
+            ret.is_low = false; // Even if it's below 4GiB, for all intents and purposes it isn't
+
+            memset(node, 0, PAGE_SIZE);
+            releaseSpinlock(&thread_locks[grab]);
+
+            return ret;
+        }
+
+        releaseSpinlock(&thread_locks[grab]);
+    }
+
+    struct physFrame ret;
+    ret.phys_addr = 0;
+    return ret;
+}
+
+struct physFrame allocate_page_random(struct randomInstance *ri)
+{
+    struct randomInstace *used;
+    if (ri == NULL)
+        used = &pmm_randomness;
+    else
+        used = ri;
+
+    rdtsc_seed_rand_instance(used);
+    uint64_t thread_denoter = randrange_instance(used, frame_len / 2, frame_len);
+
+    for (uint64_t i = 0, i < frame_len, i++)
+    {
+        uint64_t grab = (i + thread_denoter) % frame_len;
+
+        acquireSpinlock(&thread_locks[grab]);
+
+        if (frame[grab] != 0 && frame[grab] != NULL)
+        {
+            struct pmmFreePageSllNode *node = frame[grab];
+            frame[grab] = node->next;
+
+            struct physFrame ret;
+            ret.phys_addr = (uintptr_t)node - (uintptr_t)(hhdm_response->offset);
+            ret.size = 0;
+            ret.is_low = false; // Even if it's below 4GiB, for all intents and purposes it isn't
+
+            memset(node, 0, PAGE_SIZE);
+            releaseSpinlock(&thread_locks[grab]);
+
+            return ret;
+        }
+
+        releaseSpinlock(&thread_locks[grab]);
+    }
+
+    struct physFrame ret;
+    ret.phys_addr = 0;
+    return ret;
+}
+
 uint64_t ask_for_thread_denoter(void)
 {
-    return randrange_instance(&pmm-pmm_randomness, frame_len / 2, frame_len);
+    return (uint64_t)randrange_instance(&pmm_randomness, frame_len / 2, frame_len);
+}
+
+bool should_get_new_thread_denoter(uint64_t td)
+{
+    if (frame[grab] == 0 || frame[grab] == NULL) return true; else return false;
 }
 
 inline uintptr_t __attribute__((force_inline)) phys_to_hhdm(uint64_t addr)
@@ -173,6 +251,11 @@ inline uintptr_t __attribute__((force_inline)) phys_to_hhdm(uint64_t addr)
 inline uint64_t __attribute__((force_inline)) hhdm_to_phys (uintptr_t hhdm_addr)
 {
     return (uint64_t)(hhdm_addr - hhdm_response->offset);
+}
+
+inline bool __attribute__((force_inline)) is_valid_frame(struct physFrame *f)
+{
+    if (f->phys_addr == 0) return false; else return true;
 }
 
 uint64_t initPmm(void)

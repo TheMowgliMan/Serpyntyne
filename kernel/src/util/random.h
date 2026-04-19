@@ -10,11 +10,18 @@ struct randomInstance {
 }
 
 void init_rand(void);
+void init_rand_instance(struct randomInstance *ri);
 void rdtsc_seed_rand(void);
+void rdtsc_seed_rand_instance(struct randomInstance *ri);
+
 void seed_rand(uint64_t nseed);
+void seed_rand_instance(struct randomInstance *ri, uint64_t nseed);
 
 void random(void);
+uint64_t random_instance(struct randomInstance *ri);
 uint64_t randrange(uint64_t start, uint64_t end);
+uint64_t randrange_instance(struct randomInstance *ri, uint64_t start, uint64_t end);
+
 int64_t compress_to_range(int64_t n, int64_t start, int64_t end);
 
 #endif
