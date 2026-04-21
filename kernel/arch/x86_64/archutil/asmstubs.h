@@ -1,14 +1,8 @@
-#ifndef ASSEMBLY_STUBS_H_
-#define ASSEMBLY_STUBS_H_
+#ifndef ASSEMBLY_STUBS_H
+#define ASSEMBLY_STUBS_H
 
-inline void __attribute__((always_inline)) pause(void)
-{
-    asm volatile ("pause");
-}
+inline void __attribute__((force_inline)) pause(void);
 
-void load_cr3( void* cr3_value )
-{
-    asm volatile("mov %0, %%cr3" :: "r"((uint64_t)cr3_value) : "memory");
-}
+void load_cr3( void* cr3_value );
 
 #endif

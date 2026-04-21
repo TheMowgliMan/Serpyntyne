@@ -2,6 +2,8 @@
 #include <terminal.h>
 #include <util/atomics.h>
 
+#include <util/random.h>
+
 uint64_t seed;
 spinlock_t global_random_instance_lock;
 spinlock_t *gril;
@@ -119,7 +121,7 @@ void init_rand(void)
 
     releaseSpinlock(gril);
 
-    for (int i = 0; i < randrange(100, 5000); i++) { rdtsc_seed_rand(); }
+    for (unsigned int i = 0; i < randrange(100, 5000); i++) { rdtsc_seed_rand(); }
 }
 
 void init_rand_instance(struct randomInstance *ri)
@@ -142,7 +144,7 @@ void init_rand_instance(struct randomInstance *ri)
      * advanced suitably far that it will add a lot more entropy than it did when we were
      * initializing the global random instance.
      */
-    for (int i = 0; i < randrange(100, 5000); i++) { rdtsc_seed_rand_instance(ri); }
+    for (unsigned int i = 0; i < randrange(100, 5000); i++) { rdtsc_seed_rand_instance(ri); }
 }
 
 void seed_rand(uint64_t nseed)

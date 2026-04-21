@@ -4,8 +4,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <archutil/defines.h>
+#include <util/random.h>
+#include <util/liminereq.h>
 
-#define THREAD_ADDRESS_RANGE (PAGE_SIZE * (PAGE_SIZE / ARCH_POINTER_WIDTH))
+#define THREAD_ADDRESS_RANGE TAR
 
 struct pmmFreePageSllNode {
     struct pmmFreePageSllNode *next;
@@ -26,8 +28,21 @@ struct physFrame allocate_page_random(struct randomInstance *ri);
 uint64_t ask_for_thread_denoter(void);
 bool should_get_new_thread_denoter(uint64_t td);
 
-inline uintptr_t __attribute__((force_inline)) phys_to_hhdm(uint64_t addr);
-inline uint64_t __attribute__((force_inline)) hhdm_to_phys (uintptr_t hhdm_addr);
-inline bool __attribute__((force_inline)) is_valid_frame(struct physFrame *f);
+inline uintptr_t __attribute__((force_inline)) phys_to_hhdm(uint64_t addr)
+{
+    return (uintptr_t)(addr + hhdm_response->offset);
+}
+
+inline uint64_t __attribute__((force_inline)) hhdm_to_phys(uintptr_t hhdm_addr)
+{
+    return (uint64_t)(hhdm_addr - hhdm_response->offset);
+}
+
+inline bool __attribute__((force_inline)) is_valid_frame(struct physFrame *f)
+{
+    if (f->phys_addr == 0) return false; else return true;
+
+    return false; // Shut up compiler
+}
 
 #endif

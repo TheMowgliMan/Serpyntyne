@@ -1,9 +1,9 @@
+#include <util/liminereq.h>
+#include <limine.h>
+
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
-
-#include <util/liminereq.h>
-#include <limine.h>
 
 #include <terminal.h>
 #include <archinit.h>
@@ -22,6 +22,7 @@ static void hcf(void) {
 // linker script accordingly.
 void kmain(void) {
   initializeLimineRequests();
+  termInit();
   kputs("Version 0.0.0\r\n");
   
   arch_preinit();

@@ -30,13 +30,13 @@ void fill_free_lists(uint64_t ram)
      * To store the threads of the curtain, we need to allocate some pages via hhdm.
      * We need pages_to_allocate of each.
      */
-    uint64_t pages_to_allocate = (ram + 0x3FFFFFFFull) / 0x40000000ull // Divide and round up
+    uint64_t pages_to_allocate = (ram + 0x3FFFFFFFull) / 0x40000000ull; // Divide and round up
     frame_len = pages_to_allocate * (PAGE_SIZE / ARCH_POINTER_WIDTH);
 
     // This is used to temporarily store pages before the "curtain" is "hanged".
     struct pmmFreePageSllNode *pages = NULL;
 
-    uint32_t pages_added = 0; // For statistical purposes
+    uint64_t pages_added = 0; // For statistical purposes
 
     // Now we fill the "pages" list.
     for (uint64_t fill_entry = 0; fill_entry < memmap_response->entry_count; fill_entry++)
@@ -61,7 +61,7 @@ void fill_free_lists(uint64_t ram)
             uint64_t addr = entry_struct->base + entry_offset;
             struct pmmFreePageSllNode *node = (struct pmmFreePageSllNode*)(addr + hhdm_response->offset);
 
-            if (addr + PAGE_SIZE < end)
+            if (addr + PAGE_SIZE < end && node != NULL)
             {
                 node->size = 0;
                 node->next = pages;
@@ -85,6 +85,7 @@ void fill_free_lists(uint64_t ram)
      * Now we have to allocate two sets of pages_to_allocate contiguous pages.
      * As there's hardly anything in memory, however, this should be easy to fulfill.
      */
+    uint64_t pages_removed = 0;
     struct pmmFreePageSllNode *cur;
     for (uint32_t i = 0; i < pages_to_allocate; i++)
     {
@@ -96,10 +97,15 @@ void fill_free_lists(uint64_t ram)
 
         pages = cur->next;
 
-        if (pages == NULL || pages == 0) exception(OUT_OF_MEMORY, OOM_PMM_FRAME_CREATON, 0);
+        if (pages == NULL || pages == 0) exception(OUT_OF_MEMORY, OOM_PMM_FRAME_CREATION, 0);
+        pages_removed++;
     }
 
-    frame = (pmmFreePageSllNode**)(cur);
+#ifdef DEBUG
+    kprintf("Creating frame...\r\n");
+#endif
+
+    frame = (struct pmmFreePageSllNode**)(cur);
     memset(frame, 0, pages_to_allocate * PAGE_SIZE);
 
     /* Now for the spinlocks. */
@@ -113,37 +119,60 @@ void fill_free_lists(uint64_t ram)
 
         pages = cur->next;
 
-        if (pages == NULL || pages == 0) exception(OUT_OF_MEMORY, OOM_PMM_SPINLOCKS_CREATON, 0);
+        if (pages == NULL || pages == 0) exception(OUT_OF_MEMORY, OOM_PMM_SPINLOCKS_CREATION, 0);
+        pages_removed++;
     }
+
+#ifdef DEBUG
+    kprintf("Pages lost: %d\r\n", pages_removed);
+#endif
 
     /* The spinlocks also have to be initialized. */
     thread_locks = (spinlock_t*)(cur);
-    for (uint64_t i = 0; i < (pages_to_allocate * 4096) / LOCK_SIZE; i++)
+    for (uint64_t i = 0; i < (pages_to_allocate * 4096 / LOCK_SIZE); i++)
     {
         initSpinlock(&thread_locks[i]);
     }
+
+#ifdef DEBUG
+    kprintf("Spinlocks initialized! Filling PMM...\r\n");
+#endif
 
     /*
      * Now that we've created a frame-array, we populate it from the freelist!
      * Nothing has to be done for the spinlocks here.
      */
+
+    uint64_t i = 0;
     for (
         struct pmmFreePageSllNode *pop_frame = pages;
-        pop_frame != NULL;
-        pop_frame = pop_frame->next;
+        1;
     )
     {
-        uint64_t idx = (uint64_t)pop_frame / THREAD_ADDRESS_RANGE;
+        i++;
+
+        if (pop_frame == NULL)
+            break;
+
+        uint64_t idx = ((uint64_t)pop_frame - hhdm_response->offset) / THREAD_ADDRESS_RANGE;
+
         if (frame[idx] == 0 || frame[idx] == NULL)
         {
+
+            uintptr_t tmp = (uintptr_t)(pop_frame->next);
+
             frame[idx] = pop_frame;
             frame[idx]->next = NULL;
+
+            pop_frame = (struct pmmFreePageSllNode*)tmp;
         }
         else
         {
-            struct pmmFreePageSllNode *tmp = pop_frame;
-            tmp->next = frame[idx];
-            frame[idx] = tmp;
+            uintptr_t tmp = (uintptr_t)(pop_frame->next);
+            pop_frame->next = frame[idx];
+            frame[idx] = pop_frame;
+
+            pop_frame = (struct pmmFreePageSllNode*)tmp;
         }
     }
 
@@ -154,7 +183,7 @@ void fill_free_lists(uint64_t ram)
      */
 
 #ifdef DEBUG
-    kprintf("Finished filling curtain allocator!\r\n");
+    kprintf("Finished filling curtain allocator!\r\nAllocated %d pages.\r\n", (int64_t)i);
 #endif
 
     init_rand_instance(&pmm_randomness);
@@ -162,11 +191,11 @@ void fill_free_lists(uint64_t ram)
 
 struct physFrame allocate_page_generic(uint64_t thread_denoter)
 {
-    for (uint64_t i = 0, i < frame_len, i++)
+    for (uint64_t i = 0; i < frame_len; i++)
     {
         uint64_t grab = (i + thread_denoter) % frame_len;
 
-        acquireSpinlock(&thread_locks[grab]);
+        acquireSpinlock(&thread_locks[grab], 0);
 
         if (frame[grab] != 0 && frame[grab] != NULL)
         {
@@ -194,7 +223,7 @@ struct physFrame allocate_page_generic(uint64_t thread_denoter)
 
 struct physFrame allocate_page_random(struct randomInstance *ri)
 {
-    struct randomInstace *used;
+    struct randomInstance *used;
     if (ri == NULL)
         used = &pmm_randomness;
     else
@@ -203,11 +232,11 @@ struct physFrame allocate_page_random(struct randomInstance *ri)
     rdtsc_seed_rand_instance(used);
     uint64_t thread_denoter = randrange_instance(used, frame_len / 2, frame_len);
 
-    for (uint64_t i = 0, i < frame_len, i++)
+    for (uint64_t i = 0; i < frame_len; i++)
     {
         uint64_t grab = (i + thread_denoter) % frame_len;
 
-        acquireSpinlock(&thread_locks[grab]);
+        acquireSpinlock(&thread_locks[grab], 0);
 
         if (frame[grab] != 0 && frame[grab] != NULL)
         {
@@ -240,42 +269,40 @@ uint64_t ask_for_thread_denoter(void)
 
 bool should_get_new_thread_denoter(uint64_t td)
 {
-    if (frame[grab] == 0 || frame[grab] == NULL) return true; else return false;
-}
+    if (frame[td] == 0 || frame[td] == NULL) return true; else return false;
 
-inline uintptr_t __attribute__((force_inline)) phys_to_hhdm(uint64_t addr)
-{
-    return (uintptr_t)(addr + hhdm_response->offset);
-}
-
-inline uint64_t __attribute__((force_inline)) hhdm_to_phys (uintptr_t hhdm_addr)
-{
-    return (uint64_t)(hhdm_addr - hhdm_response->offset);
-}
-
-inline bool __attribute__((force_inline)) is_valid_frame(struct physFrame *f)
-{
-    if (f->phys_addr == 0) return false; else return true;
+     return false; // Shut up compiler
 }
 
 uint64_t initPmm(void)
 {
-    uint64_t ram = 0;
+    uint64_t usable_ram = 0;
+    uint64_t all_ram;
     for (uint64_t i = 0; i < memmap_response->entry_count; i++)
     {
         struct limine_memmap_entry *entry = memmap_response->entries[i];
         if (entry->type == LIMINE_MEMMAP_USABLE)
         {
-            ram += entry->length;
+            usable_ram += entry->length;
+
 #ifdef DEBUG
-            kprintf("Usable RAM found: base %x, length %x\r\n",
+            kprintf("RAM found: type %d, base %x, length %x\r\n",
+                    (int64_t)(entry->type),
                     (int64_t)(entry->base),
                     (int64_t)(entry->length));
 #endif
         }
+
+        if (memmap_response->entry_count - i != 1 || entry->type == LIMINE_MEMMAP_USABLE)
+        {
+            all_ram += entry->length;
+        }
     }
 
-    fill_free_lists(ram);
+    kprintf("Total usable ram: %d bytes\r\n", (int64_t)usable_ram);
+    kprintf("Total of all ram: %d bytes\r\n", (int64_t)all_ram);
 
-    return ram;
+    fill_free_lists(all_ram);
+
+    return usable_ram;
 }

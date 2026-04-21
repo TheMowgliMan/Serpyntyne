@@ -7,7 +7,7 @@
 #include <stdbool.h>
 
 #include <archutil/asmstubs.h>
-#include <archutil/defines>
+#include <archutil/defines.h>
 
 #include <util/atomics.h>
 #include <util/panic.h>
@@ -57,66 +57,65 @@
 #define MAP_KERNEL (~PAGE_FLAG_USERSUPERVISOR)
 #define MAP_CACHEDISABLE PAGE_FLAG_PAGE_LEVEL_CACHE_DISABLE
 #define MAP_WRITETHROUGH PAGE_FLAG_PAGE_LEVEL_WRITE_THROUGH
-
-typedef struct __attribute__((packed)) { uint64_t t } page_table_t;
+#define MAP_LARGE PAGE_DIRECTORY_SIZE_BIT
 
 struct pagemap {
     uint64_t *top_level;
     spinlock_t *map_lock;
 };
 
-inline void __attribute__((always_inline)) set_table_base_address(page_table_t *table, phys_addr_t addr)
+inline void __attribute__((always_inline)) set_table_base_address(uint64_t *table, uint64_t addr)
 {
-    table->t &= PAGE_TABLE_ADDRESS_MASK;
-    table->t |= ((uint64_t)addr & ~PAGE_TABLE_ADDRESS_MASK);
+    *table &= PAGE_TABLE_ADDRESS_MASK;
+    *table |= (addr & ~PAGE_TABLE_ADDRESS_MASK);
 }
 
-inline phys_addr_t __attribute__((always_inline)) get_table_base_address(page_table_t)
+inline uint64_t __attribute__((always_inline)) get_table_base_address(uint64_t *table)
 {
-    return (phys_addr_t)(table->t & ~PAGE_TABLE_ADDRESS_MASK);
+    return (*table & ~PAGE_TABLE_ADDRESS_MASK);
 }
 
-inline void __attribute__((always_inline)) set_table_nx(page_table_t *table)
+inline void __attribute__((always_inline)) set_table_nx(uint64_t *table)
 {
-    table->t |= PAGE_TABLE_NX_BIT;
+    *table |= PAGE_TABLE_NX_BIT;
 }
 
-inline void __attribute__((always_inline)) clear_table_nx(page_table_t *table)
+inline void __attribute__((always_inline)) clear_table_nx(uint64_t *table)
 {
-    table->t &= ~PAGE_TABLE_NX_BIT;
+    *table &= ~PAGE_TABLE_NX_BIT;
 }
 
-inline bool __attribute__((always_inline)) get_table_nx(page_table_t *table)
+inline bool __attribute__((always_inline)) get_table_nx(uint64_t *table)
 {
-    if (table->t & PAGE_TABLE_NX_BIT) return true; else return false;
+    if (*table & PAGE_TABLE_NX_BIT) return true; else return false;
 }
 
-inline void __attribute__((always_inline)) set_table_flags(page_table_t *table, uint16_t flags)
+inline void __attribute__((always_inline)) set_table_flags(uint64_t *table, uint16_t flags)
 {
-    table->t |= (uint64_t)flags & PAGE_TABLE_FLAGS_MASK;
+    *table |= (uint64_t)flags & PAGE_TABLE_FLAGS_MASK;
 }
 
-inline void __attribute__((always_inline)) clear_table_flags(page_table_t *table, uint16_t flags)
+inline void __attribute__((always_inline)) clear_table_flags(uint64_t *table, uint16_t flags)
 {
-    table->t &= ~PAGE_TABLE_FLAGS_MASK | ~(uint64_t)flags;
+    *table &= ~PAGE_TABLE_FLAGS_MASK | ~(uint64_t)flags;
 }
 
-inline uint16_t __attribute__((always_inline)) get_table_flags(page_table_t *table)
+inline uint16_t __attribute__((always_inline)) get_table_flags(uint64_t *table)
 {
-    return (uint16_t)(table->t & PAGE_TABLE_FLAGS_MASK);
+    return (uint16_t)(*table & PAGE_TABLE_FLAGS_MASK);
 }
 
 struct pagemap generate_pagemap(uint64_t *top_level, spinlock_t *spinlock)
 {
     struct pagemap pm;
-    pm->top_level = top_level;
-    pm->map_lock = spinlock;
+    pm.top_level = top_level;
+    pm.map_lock = spinlock;
     return pm;
 }
 
 int map_page(struct pagemap *map, uintptr_t virt_addr, struct physFrame phys_addr, uint64_t flags)
 {
-    if (!(((1ull << phys_addr->size) * PAGE_SIZE) & ACCEPTABLE_PAGE_SIZES)) exception(ILLEGAL_PAGE_MAP_SIZE, (int64_t)phys_addr->size, (int64_t)virt_addr);
+    if (!(((1ull << phys_addr.size) * PAGE_SIZE) & ACCEPTABLE_PAGE_SIZES)) exception(ILLEGAL_PAGE_MAP_SIZE, (int64_t)phys_addr.size, (int64_t)virt_addr);
 
     acquireSpinlock(map->map_lock, 0);
 
@@ -128,26 +127,26 @@ int map_page(struct pagemap *map, uintptr_t virt_addr, struct physFrame phys_add
 
     if (!(map->top_level[pml4i] & PAGE_DIRECTORY_PRESENT))
     {
-        struct physFrame new_frame = allocateFrame(NORMAL_FRAME);
+        struct physFrame new_frame = allocate_page_generic(4);
         map->top_level[pml4i] = (uint64_t)(new_frame.phys_addr & ~PAGE_TABLE_ADDRESS_MASK);
-        set_table_flags(map->top_level[pml4i], PAGE_DIRECTORY_PRESENT | PAGE_DIRECTORY_READWRITE | PAGE_DIRECTORY_USERSUPERVISOR);
+        set_table_flags(&map->top_level[pml4i], PAGE_DIRECTORY_PRESENT | PAGE_DIRECTORY_READWRITE | PAGE_DIRECTORY_USERSUPERVISOR);
     }
 
     uint64_t *pml3v = (uint64_t*)((map->top_level[pml4i] & ~PAGE_TABLE_ADDRESS_MASK) + hhdm_response->offset);
     if (!(pml3v[pml3i] & PAGE_DIRECTORY_PRESENT))
     {
-        struct physFrame new_frame = allocateFrame(NORMAL_FRAME);
+        struct physFrame new_frame = allocate_page_generic(6);
         pml3v[pml3i] = (uint64_t)(new_frame.phys_addr & ~PAGE_TABLE_ADDRESS_MASK);
-        set_table_flags(pml3v[pml3i], PAGE_DIRECTORY_PRESENT | PAGE_DIRECTORY_READWRITE | PAGE_DIRECTORY_USERSUPERVISOR);
+        set_table_flags(&pml3v[pml3i], PAGE_DIRECTORY_PRESENT | PAGE_DIRECTORY_READWRITE | PAGE_DIRECTORY_USERSUPERVISOR);
     }
 
     uint64_t *pml2v = (uint64_t*)((pml3v[pml3i] & ~PAGE_TABLE_ADDRESS_MASK) + hhdm_response->offset);
 
-    if (phys_addr->size == LARGE_PAGE_SIZE_EXPONENT)
+    if (phys_addr.size == LARGE_PAGE_SIZE_EXPONENT)
     {
-        pml2v[pml2i] == (uint64_t)(phys_addr->phys_addr & ~PAGE_TABLE_ADDRESS_MASK);
-        set_table_flags((page_table_t*)(pml2v[pml2i]), PAGE_DIRECTORY_SIZE_BIT | (uint16_t)(flags & 0xFFFF));
-        if (!(flags & MAP_EXECUTABLE)) set_table_nx((page_table_t*)(pml2v[pml2i]));
+        pml2v[pml2i] = (uint64_t)(phys_addr.phys_addr & ~PAGE_TABLE_ADDRESS_MASK);
+        set_table_flags((uint64_t*)(&pml2v[pml2i]), PAGE_DIRECTORY_SIZE_BIT | (uint16_t)(flags & 0xFFFF));
+        if (!(flags & MAP_EXECUTABLE)) set_table_nx((uint64_t*)(pml2v[pml2i]));
 
         releaseSpinlock(map->map_lock);
         return 0;
@@ -155,15 +154,16 @@ int map_page(struct pagemap *map, uintptr_t virt_addr, struct physFrame phys_add
 
     if (!(pml2v[pml2i] & PAGE_DIRECTORY_PRESENT))
     {
-        struct physFrame new_frame = allocateFrame(NORMAL_FRAME);
+        struct physFrame new_frame = allocate_page_generic(6);
         pml2v[pml2i] = (uint64_t)(new_frame.phys_addr & ~PAGE_TABLE_ADDRESS_MASK);
-        set_table_flags(pml2v[pml2i], PAGE_DIRECTORY_PRESENT | PAGE_DIRECTORY_READWRITE | PAGE_DIRECTORY_USERSUPERVISOR);
+        set_table_flags(&pml2v[pml2i], PAGE_DIRECTORY_PRESENT | PAGE_DIRECTORY_READWRITE | PAGE_DIRECTORY_USERSUPERVISOR);
     }
 
     uint64_t *pml1v = (uint64_t*)((pml2v[pml2i] & ~PAGE_TABLE_ADDRESS_MASK) + hhdm_response->offset);
+    pml1v[pml1i] = ~PAGE_TABLE_ADDRESS_MASK & phys_addr.phys_addr;
 
-    set_table_flags((page_table_t*)(pml1v[pml1i]), PAGE_DIRECTORY_SIZE_BIT | (uint16_t)(flags & 0xFFFF));
-    if (!(flags & MAP_EXECUTABLE)) set_table_nx((page_table_t*)(pml1v[pml1i]));
+    set_table_flags((uint64_t*)(pml1v[pml1i]), PAGE_DIRECTORY_SIZE_BIT | (uint16_t)(flags & 0xFFFF));
+    if (!(flags & MAP_EXECUTABLE)) set_table_nx((uint64_t*)(pml1v[pml1i]));
 
     releaseSpinlock(map->map_lock);
     return 0;

@@ -13,7 +13,7 @@ void initSpinlock(spinlock_t *lock)
 
 void acquireSpinlock(spinlock_t *lock, uint32_t pid)
 {
-    if (pid == lock->owner_pid) return;
+    // if (pid == lock->owner_pid) return;
 
     while (true)
     {

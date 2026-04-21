@@ -72,7 +72,7 @@ void exception(uint64_t reason, int64_t data1, int64_t data2)
     {
         kprintf("(OUT_OF_MEMORY)\r\n");
         kprintf("The system ran out of memory during a critical operation. See below for more details.\r\nThe system is aborting, please restart it manually\r\n");
-        kprintf("Cause: ")
+        kprintf("Cause: ");
 
         switch (data1)
         {

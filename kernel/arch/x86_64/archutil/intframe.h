@@ -31,9 +31,9 @@ struct intframe
     uint64_t ss;
 };
 
-inline uint8_t __attribute__((always_inline)) get_vector(struct intframe* iframe)
+inline uint64_t __attribute__((always_inline)) get_vector(struct intframe* iframe)
 {
-    return (uint8_t)iframe->vector;
+    return iframe->vector;
 }
 
 inline bool __attribute__((always_inline)) is_fatal(struct intframe* iframe)

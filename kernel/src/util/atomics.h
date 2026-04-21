@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define LOCK_SIZE sizeof(uint64_t)
+#define LOCK_SIZE 8
 
 typedef _Atomic(unsigned long int) atomic_ulint_t;
 typedef _Atomic(unsigned int) atomic_uint_t;
