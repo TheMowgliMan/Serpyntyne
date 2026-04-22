@@ -62,7 +62,7 @@ char *startup_notes[STARTUP_NOTES] = {
     [0;5;37;47m@8@@@@@@@@@@@@@@@@@@X@@@X@X@X@X@X@@@@X@@X@@@X@@X@X@@X@@X@X@@X@X@@X@@X@@@@@@@@@@@@@@@@@@@@@@@@@@@8@8@[0m\r\n",
     "beep beep bop beep boop",
     "snikety snek!",
-    "Ring Three for the Error-kings under the sky,\r\n\tRing One for the Driver-lords in their halls of stone,\r\n\tRing Two for Mortal Mandoc doomed to die,\r\n\tOne for the Operating System on his digital throne.\r\n"
+    "Ring Three for the Error-kings under the sky,\r\n\tRing One for the Driver-lords in their halls of stone,\r\n\tRing Two for Mortal Mandoc doomed to die,\r\n\tRing Zero for the Operating System on his digital throne.\r\n"
     "In the land of Compudor where the shadows lie.\r\n\tRing Zero to rule them all, Ring Zero to find them,\r\n\tRing Zero to bring them all and in the darkness bind them\r\n\tIn the land of Compudor where the shadows lie.",
     "ask your doctor whether Serpyntyne is right for you. Side effects may include drowsiness, fatigue, nausea, hair loss, vomiting, and compulsive Python programming.",
     "I'm going to create a real Operating System! With lottery scheduling! And thread preemption!",
