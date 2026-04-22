@@ -39,7 +39,7 @@ inline uint64_t __attribute__((always_inline)) get_vector(struct intframe* ifram
 inline bool __attribute__((always_inline)) is_fatal(struct intframe* iframe)
 {
     uint8_t v = (uint8_t)iframe->vector;
-    if (v == 0x2 || v == 0x8 || v == 0x0a || v == 0x0b || v == 0x0e) return true;
+    if (v == 0x2 || v == 0x8 || v == 0x0a || v == 0x0b) return true;
     return false;
 }
 
@@ -54,30 +54,14 @@ inline uint64_t __attribute__((always_inline)) get_error_code(struct intframe* i
     return iframe->err;
 }
 
-inline void __attribute__((always_inline)) print_registers(struct intframe* iframe)
+inline bool __attribute__((always_inline)) is_placeholder(struct intframe* iframe)
 {
-    kprintf("RIP: %x RSP: %x\r\n", (int64_t)(iframe->rip), (int64_t)(iframe->rsp));
-    kprintf("RFlags: %b\r\n", (int64_t)(iframe->rflags));
-    kprintf("RAX: %x RBX: %x RCX: %x RDX: %x\r\n",
-            (int64_t)(iframe->rax),
-            (int64_t)(iframe->rbx),
-            (int64_t)(iframe->rcx),
-            (int64_t)(iframe->rdx));
-    kprintf("RSI: %x RDI: %x RBP: %x R8: %x\r\n",
-            (int64_t)(iframe->rsi),
-            (int64_t)(iframe->rdi),
-            (int64_t)(iframe->rbp),
-            (int64_t)(iframe->r8));
-    kprintf("R9: %x R10: %x R11: %x R12: %x\r\n",
-            (int64_t)(iframe->r9),
-            (int64_t)(iframe->r10),
-            (int64_t)(iframe->r11),
-            (int64_t)(iframe->r12));
-    kprintf("R13: %x R14: %x R15: %x CS: %x\r\n",
-            (int64_t)(iframe->r13),
-            (int64_t)(iframe->r14),
-            (int64_t)(iframe->r15),
-            (int64_t)(iframe->cs));
+    uint8_t v = (uint8_t)iframe->vector;
+
+    if (v == 0x09) return true;
+    return false;
 }
+
+void print_registers(struct intframe* iframe);
 
 #endif

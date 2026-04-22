@@ -29,8 +29,14 @@ void initIDT()
   kputs("Loading IDT...");
 
   for (int i = 0x00; i < 256; i++) {
-	generateIDTEntry(i, 0, 0x8E, (void (*)())isr0x09);
+	generateIDTEntry(i, 1, 0x8E, (void (*)())isr0x09);
   }
+
+  generateIDTEntry(0x00, 1, 0x8e, (void (*)())isr0x00);
+  generateIDTEntry(0x06, 1, 0x8e, (void (*)())isr0x06);
+  generateIDTEntry(0x08, 0, 0x8e, (void (*)())isr0x08);
+  generateIDTEntry(0x0d, 1, 0x8e, (void (*)())isr0x0D);
+  generateIDTEntry(0x0e, 1, 0x8e, (void (*)())isr0x0E);
 
   idtr.limit = sizeof(IDT) - 1;
   idtr.base = (uint64_t)&IDT;

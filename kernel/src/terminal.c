@@ -14,31 +14,31 @@ spinlock_t *term_lock = &terminal_lock;
 struct flanterm_context *ft_ctx = NULL;
 
 uint32_t ansi_colors[8] = {
-    0x00130208,
-    0x00ff8274,
-    0x007c183c,
-    0x00460e2b,
-    0x004f1446,
-    0x006e5181,
-    0x006d85a5,
-    0x00ffaeaa
+    0x00110d12, // black
+    0x00ae2334, // red
+    0x001ebc73, // green
+    0x00966c6c, // brown
+    0x004d65b4, // blue
+    0x00831c5d, // magenta
+    0x000b8a8f, // cyan
+    0x00c7dcd0 // grey
 };
 uint32_t ansi_bright[8] = {
-    0x000d001a,
-    0x00d53c6a,
-    0x006e5181,
-    0x0031051e,
-    0x006d85a5,
-    0x006f1d5c,
-    0x006cb9c9,
-    0x00acffff
+    0x002e222f,
+    0x00e83b3b,
+    0x0091db69,
+    0x00ab947a,
+    0x004d9be6,
+    0x00c32454,
+    0x000eaf9b,
+    0x00ffffff
 };
 
-uint32_t default_fg = 0x00acffff;
-uint32_t default_bg = 0x000d001a;
+uint32_t default_fg = 0x00c7dcd0;
+uint32_t default_bg = 0x00110d12;
 
-uint32_t default_bright_fg = 0x00ffaeaa;
-uint32_t default_bright_bg = 0x00130208;
+uint32_t default_bright_fg = 0x00ffffff;
+uint32_t default_bright_bg = 0x003e3546;
 
 void termInit()
 {
@@ -50,7 +50,7 @@ void termInit()
         limine_framebuffer_ctx->green_mask_size, limine_framebuffer_ctx->green_mask_shift,
         limine_framebuffer_ctx->blue_mask_size, limine_framebuffer_ctx->blue_mask_shift,
         NULL,
-        ansi_colors, ansi_colors, // Colors (normal then bright)
+        ansi_colors, ansi_bright, // Colors (normal then bright)
         &default_bg, &default_fg, // Default bg, then fb
         &default_bright_bg, &default_bright_fg, // Default bright bg, then bright fb
         NULL, 0, 0, 1,
@@ -61,7 +61,7 @@ void termInit()
 
     initSpinlock(term_lock);
 
-    kputs("\033[0;37m");
+    kputs(TTY_RESET);
 }
 
 void kputs(const char* msg)
@@ -73,9 +73,9 @@ void kputs(const char* msg)
 
 void kerror(const char *msg)
 {
-    kputs("\033[0;31m");
+    kputs(TTY_RED);
     kputs(msg);
-    kputs("\033[0;37m"); // We assume that text is normally white
+    kputs(TTY_RESET); // We assume that text is normally white
 }
 
 char kputchar(int c)

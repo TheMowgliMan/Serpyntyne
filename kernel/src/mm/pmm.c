@@ -78,7 +78,7 @@ void fill_free_lists(uint64_t ram)
     }
 
 #ifdef DEBUG
-    kprintf("Frames allocated: %d\r\n",
+    kprintf(TTY_MAGENTA "Frames allocated: %d\r\n" TTY_RESET,
             (int64_t)pages_added);
 #endif
     /*
@@ -124,7 +124,7 @@ void fill_free_lists(uint64_t ram)
     }
 
 #ifdef DEBUG
-    kprintf("Pages lost: %d\r\n", pages_removed);
+    kprintf(TTY_MAGENTA "Pages lost: %d\r\n" TTY_RESET, pages_removed);
 #endif
 
     /* The spinlocks also have to be initialized. */
@@ -183,7 +183,7 @@ void fill_free_lists(uint64_t ram)
      */
 
 #ifdef DEBUG
-    kprintf("Finished filling curtain allocator!\r\nAllocated %d pages.\r\n", (int64_t)i);
+    kprintf("Finished filling curtain allocator!\r\n" TTY_MAGENTA "Allocated %d pages.\r\n" TTY_RESET, (int64_t)i);
 #endif
 
     init_rand_instance(&pmm_randomness);
@@ -276,6 +276,8 @@ bool should_get_new_thread_denoter(uint64_t td)
 
 uint64_t initPmm(void)
 {
+    kprintf(TTY_CYAN "Starting physical memory manager...\r\n" TTY_RESET);
+
     uint64_t usable_ram = 0;
     uint64_t all_ram;
     for (uint64_t i = 0; i < memmap_response->entry_count; i++)
@@ -286,7 +288,7 @@ uint64_t initPmm(void)
             usable_ram += entry->length;
 
 #ifdef DEBUG
-            kprintf("RAM found: type %d, base %x, length %x\r\n",
+            kprintf(TTY_MAGENTA "RAM found: " TTY_HICYAN "type %d, " TTY_BLUE "base %x, " TTY_HIMAGENTA "length %x\r\n" TTY_RESET,
                     (int64_t)(entry->type),
                     (int64_t)(entry->base),
                     (int64_t)(entry->length));
@@ -299,8 +301,8 @@ uint64_t initPmm(void)
         }
     }
 
-    kprintf("Total usable ram: %d bytes\r\n", (int64_t)usable_ram);
-    kprintf("Total of all ram: %d bytes\r\n", (int64_t)all_ram);
+    kprintf(TTY_MAGENTA "Total usable ram: %d bytes\r\n", (int64_t)usable_ram);
+    kprintf(TTY_HICYAN "Total of all ram: %d bytes\r\n" TTY_RESET, (int64_t)all_ram);
 
     fill_free_lists(all_ram);
 

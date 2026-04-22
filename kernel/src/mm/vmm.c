@@ -12,6 +12,12 @@ uintptr_t kernel_page_table;
 
 void paging_init(void)
 {
+    kprintf("Starting Virtual Memory Manager...\r\n");
+
     struct physFrame tmpf= allocate_page_random(NULL);
     kernel_page_table = tmpf.phys_addr;
+
+#ifdef DEBUG
+    kprintf("Mapping HHDM...\r\n");
+#endif
 }

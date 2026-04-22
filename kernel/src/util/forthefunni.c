@@ -1,7 +1,7 @@
 #include <util/forthefunni.h>
 #include <util/random.h>
 
-char startup_notes[STARTUP_NOTES][32168] = {
+char *startup_notes[STARTUP_NOTES] = {
     "also try Telix!",
     "green anaconda, green anaconda...",
     "confirmed non-venomous!",
@@ -20,7 +20,7 @@ char startup_notes[STARTUP_NOTES][32168] = {
     "biting your heel since 4,000 BC!",
     "local man robs Wendy's with alligator!",
     "there may or may not be a snake in your car currently >:D",
-    /* snek */ "\r\n[0;5;37;47m888[0;1;37;47m8[0;5;37;47m@88888888888888@8@8@8@8@8@8@8@8@@8@@@8@@@@@8@8@@@@@8@@8@@8@@8@@8@@8@8@8@@8@@8@8@88@8@8@8@8888888[0m\r\n \
+    /* snek */ "\r\n\t[0;5;37;47m888[0;1;37;47m8[0;5;37;47m@88888888888888@8@8@8@8@8@8@8@8@@8@@@8@@@@@8@8@@@@@8@@8@@8@@8@@8@@8@8@8@@8@@8@8@88@8@8@8@8888888[0m\r\n \
     [0;5;37;47m8[0;1;37;47m8[0;5;37;47m888[0;1;37;47m8[0;5;37;47m88[0;1;37;47m8[0;5;37;47m@888@@@@@8@@8@@@8@@@8@@@8@@8@@8@@@8@@8@@@8@8@@@8@@@@@8@@8@@8@@8@8@8@@8@@8@8@88@8@8@8@@8@888[0m\r\n \
     [0;5;37;47m888[0;1;37;47m8[0;5;37;47m@@[0;1;37;47m8[0;5;37;47mX8[0;1;37;47m8[0;5;37;47m@@[0;1;37;47m8[0;5;37;47mX[0;1;37;47m8[0;5;37;47mX[0;1;37;47m8[0;5;37;47mX[0;1;37;47m8[0;5;37;47mX[0;1;37;47m8[0;5;37;47mX[0;1;37;47m8[0;5;37;47mX[0;1;37;47m8[0;5;37;47mX@8@@8@8@@8@@@@@8@@@@@@@@@@@@@@@@@@8@@@@@@@@@@@@@@@@8@@8@@8@@@8@8@8@[0;1;37;47m8[0;5;37;47mX[0;1;37;47m8[0;5;37;47mX[0;1;37;47m8[0;5;37;47mX8[0m\r\n \
     [0;5;37;47m888@[0;1;37;47m8[0;5;37;47mX@[0;1;37;47m8[0;5;37;47mX@[0;1;37;47m8[0;5;37;47mSX[0;1;37;47m8[0;5;37;47mS[0;1;37;47m8[0;5;37;47m%[0;1;37;47m8[0;5;37;47mS@X@X@X@[0;1;37;47m8[0;5;37;47mX@8@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@8@@8@@8@@8@@@@@X[0;1;37;47m8[0;5;37;47mX[0m\r\n \
@@ -61,10 +61,17 @@ char startup_notes[STARTUP_NOTES][32168] = {
     [0;5;37;47m@@@@@@@@@@@@@@@@X@X@@X@X@@@@@X@@@X@XX@XX@@XX@XX@X@@X@X@X@@X@@X@@X@@X@X@X@@@X@@@@@@@@@@@@@@@@@@@@@@@8[0m\r\n \
     [0;5;37;47m@8@@@@@@@@@@@@@@@@@@X@@@X@X@X@X@X@@@@X@@X@@@X@@X@X@@X@@X@X@@X@X@@X@@X@@@@@@@@@@@@@@@@@@@@@@@@@@@8@8@[0m\r\n",
     "beep beep bop beep boop",
-    "snikety snek!"
+    "snikety snek!",
+    "Ring Three for the Error-kings under the sky,\r\n\tRing One for the Driver-lords in their halls of stone,\r\n\tRing Two for Mortal Mandoc doomed to die,\r\n\tOne for the Operating System on his digital throne.\r\n"
+    "In the land of Compudor where the shadows lie.\r\n\tRing Zero to rule them all, Ring Zero to find them,\r\n\tRing Zero to bring them all and in the darkness bind them\r\n\tIn the land of Compudor where the shadows lie.",
+    "ask your doctor whether Serpyntyne is right for you. Side effects may include drowsiness, fatigue, nausea, hair loss, vomiting, and compulsive Python programming.",
+    "I'm going to create a real Operating System! With lottery scheduling! And thread preemption!",
+    "try new berry flavor!",
+    "this kernel is an off-duty Bolivian traffic wardern.",
+    "so long, and thanks for all the Fishix!"
 };
 
-char panic_notes[PANIC_NOTES][65536] = {
+char *panic_notes[PANIC_NOTES] = {
     "Houston, we have a problem!",
     "are you sure you want to lose your life, to the witch who has caused you nothing but strife?",
     "*rattles rattle*",
