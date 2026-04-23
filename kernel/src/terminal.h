@@ -5,6 +5,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include <limine.h>
+#include <stdarg.h>
 
 #define EOF (-1)
 
@@ -39,11 +40,19 @@
 #define TTY_HICYAN "\e[0;96m"
 #define TTY_HIGREY "\e[0;97m"
 
+#define LOG_INFO 272
+#define LOG_NOTICE 481
+#define LOG_ERROR 44
+#define LOG_PROC 21
+#define LOG_WARN 123
+#define LOG_SUCCESS 77
 
 void termInit();
 void kputs(const char* msg);
 void kerror(const char *msg);
 char kputchar(int c);
 int kprintf(const char* restrict format, ...);
+int kvprintf(const char* restrict format, va_list prm);
+int klog(int logstatus, const char* restrict format, ...);
 
 #endif

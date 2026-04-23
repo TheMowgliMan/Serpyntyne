@@ -10,6 +10,7 @@ void panic(struct intframe* iframe)
 {
     // This file doesn't actually know what 'iframe' looks like, as it's architecture-specific.
     // Therefore, any interaction with it must be mediated by archutil functions.
+    klog(LOG_ERROR, "Kernel panic!\r\n");
     kprintf(TTY_REDBG "Panic: %s\r\n" TTY_REDBG, getPanicMessage());
     kprintf("Error code: %b ", (int64_t)get_error_code(iframe));
     kprintf("Vector: %x\r\n", (int64_t)get_vector(iframe));
@@ -26,7 +27,8 @@ void panic(struct intframe* iframe)
 
 void exception(uint64_t reason, int64_t data1, int64_t data2)
 {
-    kprintf(TTY_REDBG "Kernel Exception: %s\r\n" TTY_REDBG, getPanicMessage());
+    klog(LOG_ERROR, "Kernel error!\r\n");
+    kprintf(TTY_REDBG "Exception: %s\r\n" TTY_REDBG, getPanicMessage());
     kprintf("Reason: %x ", (int64_t)reason);
 
     if (reason == NO_MEMORY)

@@ -7,6 +7,7 @@
 #include <flanterm_backends/fb.h>
 #include <terminal.h>
 #include <util/atomics.h>
+#include <util/fmt437.h>
 
 spinlock_t terminal_lock;
 spinlock_t *term_lock = &terminal_lock;
@@ -53,7 +54,7 @@ void termInit()
         ansi_colors, ansi_bright, // Colors (normal then bright)
         &default_bg, &default_fg, // Default bg, then fb
         &default_bright_bg, &default_bright_fg, // Default bright bg, then bright fb
-        NULL, 0, 0, 1,
+        FM_T_437, 9, 16, 1,
         0, 0,
         0,
         0
@@ -75,7 +76,7 @@ void kerror(const char *msg)
 {
     kputs(TTY_RED);
     kputs(msg);
-    kputs(TTY_RESET); // We assume that text is normally white
+    kputs(TTY_RESET);
 }
 
 char kputchar(int c)
@@ -94,9 +95,9 @@ static bool print(const char* data, size_t length) {
     return true;
 }
 
-int kprintf(const char* restrict format, ...) {
+int kvprintf(const char* restrict format, va_list prm) {
     va_list parameters;
-    va_start(parameters, format);
+    va_copy(parameters, prm);
 
     int written = 0;
 
@@ -272,5 +273,49 @@ int kprintf(const char* restrict format, ...) {
     }
 
     va_end(parameters);
+
     return written;
+}
+
+int kprintf(const char* restrict format, ...)
+{
+    va_list parameters;
+    va_start(parameters, format);
+
+    kvprintf(format, parameters);
+
+    va_end(parameters);
+}
+
+int klog(int logstatus, const char* restrict format, ...)
+{
+    switch (logstatus) {
+        case LOG_INFO:
+            kputs("[  INFO   ] ");
+            break;
+        case LOG_NOTICE:
+            kputs("[" TTY_MAGENTA " NOTICE  " TTY_RESET "] ");
+            break;
+        case LOG_ERROR:
+            kputs("[" TTY_RED "  ERROR  " TTY_RESET "] ");
+            break;
+        case LOG_PROC:
+            kputs("[" TTY_CYAN "PROCEDURE" TTY_RESET "] ");
+            break;
+        case LOG_WARN:
+            kputs("[" TTY_HIMAGENTA " WARNING " TTY_RESET "] ");
+            break;
+        case LOG_SUCCESS:
+            kputs("[" TTY_GREEN " SUCCESS " TTY_RESET "] ");
+            break;
+        default:
+            kputs("[" TTY_BROWN "INCORRECT" TTY_RESET "] ");
+    }
+
+    va_list parameters;
+    va_start(parameters, format);
+
+    kvprintf(format, parameters);
+
+    va_end(parameters);
 }

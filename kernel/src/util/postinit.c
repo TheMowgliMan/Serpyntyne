@@ -5,12 +5,12 @@
 
 void postInit(void)
 {
-    kprintf(TTY_CYAN "Post-initializing...\r\n" TTY_RESET);
+    klog(LOG_PROC, "Post-initializing...\r\n");
 
     init_rand();
 
     uint64_t free_ram = initPmm();
-    kprintf(TTY_MAGENTA "Free RAM: %d bytes\r\n" TTY_RESET, (int64_t)free_ram);
+    klog(LOG_NOTICE, "Usable RAM: %d bytes\r\n", (int64_t)free_ram);
 
-    kputs(TTY_GREEN "Post-init complete!\r\n" TTY_RESET);
+    klog(LOG_SUCCESS, "Post-init complete!\r\n");
 }

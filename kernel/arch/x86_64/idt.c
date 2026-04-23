@@ -26,7 +26,7 @@ void generateIDTEntry(int vector, uint8_t ist, uint8_t attributes, void(*handler
 
 void initIDT()
 {
-  kputs("Loading IDT...");
+  klog(LOG_INFO, "Loading IDT...");
 
   for (int i = 0x00; i < 256; i++) {
 	generateIDTEntry(i, 1, 0x8E, (void (*)())isr0x09);

@@ -43,7 +43,10 @@ extern "C" {
 #define FLANTERM_FB_FONT_GLYPHS 256
 
 struct flanterm_fb_char {
-    uint32_t c;
+    uint8_t c;
+    bool fg_default;
+    bool bg_default;
+    /* 1 byte implicit tail-of-first-word padding */
     uint32_t fg;
     uint32_t bg;
 };
@@ -108,11 +111,15 @@ struct flanterm_fb_context {
 
     uint32_t text_fg;
     uint32_t text_bg;
+    bool text_fg_default;
+    bool text_bg_default;
     size_t cursor_x;
     size_t cursor_y;
 
     uint32_t saved_state_text_fg;
     uint32_t saved_state_text_bg;
+    bool saved_state_text_fg_default;
+    bool saved_state_text_bg_default;
     size_t saved_state_cursor_x;
     size_t saved_state_cursor_y;
 

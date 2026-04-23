@@ -85,13 +85,10 @@ struct flanterm_context {
     bool saved_state_bg_bold;
     bool saved_state_reverse_video;
     bool saved_state_origin_mode;
-    bool saved_state_wrap_enabled;
     size_t saved_state_current_charset;
     uint8_t saved_state_charsets[2];
     size_t saved_state_current_primary;
     size_t saved_state_current_bg;
-    size_t saved_state_scroll_top_margin;
-    size_t saved_state_scroll_bottom_margin;
 
     /* to be set by backend */
 

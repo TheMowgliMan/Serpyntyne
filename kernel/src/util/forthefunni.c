@@ -67,7 +67,7 @@ char *startup_notes[STARTUP_NOTES] = {
     "ask your doctor whether Serpyntyne is right for you. Side effects may include drowsiness, fatigue, nausea, hair loss, vomiting, and compulsive Python programming.",
     "I'm going to create a real Operating System! With lottery scheduling! And thread preemption!",
     "try new berry flavor!",
-    "this kernel is an off-duty Bolivian traffic wardern.",
+    "this kernel is an off-duty Bolivian traffic warden.",
     "so long, and thanks for all the Fishix!"
 };
 

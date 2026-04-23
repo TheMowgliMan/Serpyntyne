@@ -32,7 +32,7 @@ struct GDTItem generateGDTItem(uint32_t base, uint32_t limit, uint8_t access_byt
 // Not quite yoinked from the OSDev Wiki
 void encodeGDTItem(uint8_t *target, struct GDTItem source)
 {
-  if (source.limit > 0xFFFFF) {kerror("GDT Encode failed: limit greater than 0xFFFFF!\r\n"); return;}
+  if (source.limit > 0xFFFFF) {klog(LOG_WARN, "GDT Encode failed: limit greater than 0xFFFFF!\r\n"); return;}
 
   // Limit
   target[0] = source.limit & 0xFF;
@@ -62,7 +62,7 @@ void encodeTSS(uint8_t *target)
 
 void initGDT(void)
 {
-  kputs("Loading GDT...");
+  klog(LOG_INFO, "Loading GDT...");
   
   struct GDTItem nulld = generateGDTItem(0, 0, 0x00, 0x0);
   encodeGDTItem(&GDT[DESC 0], nulld);

@@ -31,7 +31,7 @@ void kmain(void) {
   kprintf("Serpyntyne: %s \r\n", getStartMessage());
 
   // We're done, just hang...
-  kerror("We're done, hanging...\r\n");
+  klog(LOG_ERROR, "We're done, hanging...\r\n");
 
   hcf();
 }

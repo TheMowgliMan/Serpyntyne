@@ -112,13 +112,15 @@ void flanterm_context_reinit(struct flanterm_context *ctx) {
     ctx->saved_cursor_y = 0;
     ctx->current_primary = (size_t)-1;
     ctx->current_bg = (size_t)-1;
+    ctx->saved_state_bold = false;
+    ctx->saved_state_bg_bold = false;
+    ctx->saved_state_reverse_video = false;
+    ctx->saved_state_origin_mode = false;
+    ctx->saved_state_current_charset = 0;
     ctx->saved_state_charsets[0] = CHARSET_DEFAULT;
     ctx->saved_state_charsets[1] = CHARSET_DEC_SPECIAL;
-    ctx->saved_state_wrap_enabled = true;
     ctx->saved_state_current_primary = (size_t)-1;
     ctx->saved_state_current_bg = (size_t)-1;
-    ctx->saved_state_scroll_top_margin = 0;
-    ctx->saved_state_scroll_bottom_margin = ctx->rows;
     ctx->last_printed_char = ' ';
     ctx->last_was_graphic = false;
     ctx->scroll_top_margin = 0;
@@ -485,8 +487,6 @@ static void dec_private_parse(struct flanterm_context *ctx, uint8_t c) {
             case 1049:
                 if (set) {
                     save_state(ctx);
-                    ctx->scroll_top_margin = 0;
-                    ctx->scroll_bottom_margin = ctx->rows;
                     ctx->clear(ctx, true);
                 } else {
                     ctx->clear(ctx, true);
@@ -709,6 +709,14 @@ static void control_sequence_parse(struct flanterm_context *ctx, uint8_t c) {
     }
 
     if (ctx->dec_private == true) {
+        // Intermediate bytes (0x20-0x2F) don't terminate the CSI; they
+        // just mean we don't recognize the sequence (e.g. DECRQM "CSI ? Ps $ p").
+        // Wait for the real final byte and drop it.
+        if (c >= 0x20 && c <= 0x2F) {
+            ctx->dec_private = false;
+            ctx->csi_unhandled = true;
+            return;
+        }
         dec_private_parse(ctx, c);
         goto cleanup;
     }
@@ -1039,7 +1047,7 @@ static void control_sequence_parse(struct flanterm_context *ctx, uint8_t c) {
             }
             ctx->scroll_enabled = r;
             ctx->wrap_enabled = saved_wrap;
-            size_t count = ctx->esc_values[0] > 65535 ? 65535 : ctx->esc_values[0];
+            size_t count = ctx->esc_values[0] > ctx->cols ? ctx->cols : ctx->esc_values[0];
             for (size_t i = 0; i < count; i++) {
                 if (ctx->insert_mode == true) {
                     size_t ix, iy;
@@ -1078,14 +1086,11 @@ static void restore_state(struct flanterm_context *ctx) {
     ctx->bg_bold = ctx->saved_state_bg_bold;
     ctx->reverse_video = ctx->saved_state_reverse_video;
     ctx->origin_mode = ctx->saved_state_origin_mode;
-    ctx->wrap_enabled = ctx->saved_state_wrap_enabled;
     ctx->current_charset = ctx->saved_state_current_charset;
     ctx->charsets[0] = ctx->saved_state_charsets[0];
     ctx->charsets[1] = ctx->saved_state_charsets[1];
     ctx->current_primary = ctx->saved_state_current_primary;
     ctx->current_bg = ctx->saved_state_current_bg;
-    ctx->scroll_top_margin = ctx->saved_state_scroll_top_margin;
-    ctx->scroll_bottom_margin = ctx->saved_state_scroll_bottom_margin;
 
     ctx->restore_state(ctx);
 }
@@ -1097,14 +1102,11 @@ static void save_state(struct flanterm_context *ctx) {
     ctx->saved_state_bg_bold = ctx->bg_bold;
     ctx->saved_state_reverse_video = ctx->reverse_video;
     ctx->saved_state_origin_mode = ctx->origin_mode;
-    ctx->saved_state_wrap_enabled = ctx->wrap_enabled;
     ctx->saved_state_current_charset = ctx->current_charset;
     ctx->saved_state_charsets[0] = ctx->charsets[0];
     ctx->saved_state_charsets[1] = ctx->charsets[1];
     ctx->saved_state_current_primary = ctx->current_primary;
     ctx->saved_state_current_bg = ctx->current_bg;
-    ctx->saved_state_scroll_top_margin = ctx->scroll_top_margin;
-    ctx->saved_state_scroll_bottom_margin = ctx->scroll_bottom_margin;
 }
 
 static void escape_parse(struct flanterm_context *ctx, uint8_t c) {
@@ -1859,6 +1861,9 @@ static int unicode_to_cp437(uint64_t code_point) {
         case 0x25fc: return 0xfe; // ◼ → ■
 
         // Typographic punctuation
+        case 0x2010: return 0x2d; // ‐ (hyphen) → -
+        case 0x2011: return 0x2d; // ‑ (non-breaking hyphen) → -
+        case 0x2012: return 0x2d; // ‒ (figure dash) → -
         case 0x2013: return 0x2d; // – (en dash) → -
         case 0x2014: return 0x2d; // — (em dash) → -
         case 0x2018: return 0x27; // ' (left single quote) → '
@@ -1884,6 +1889,7 @@ static int unicode_to_cp437(uint64_t code_point) {
         case 0x2211: return 0xe4; // ∑ → Σ
 
         // Horizontal line extension
+        case 0x2015: return 0xc4; // ― (horizontal bar) → ─
         case 0x23af: return 0xc4; // ⎯ → ─
 
         // Media transport symbols
@@ -1962,33 +1968,41 @@ static void flanterm_putchar(struct flanterm_context *ctx, uint8_t c) {
         return;
     }
 
-    if (ctx->unicode_remaining != 0) {
+    if (ctx->escape == false && ctx->unicode_remaining != 0) {
         if ((c & 0xc0) != 0x80) {
+            bool already_errored = ctx->code_point > 0x10ffff;
             ctx->unicode_remaining = 0;
-            insert_shift(ctx, 1);
-            ctx->raw_putchar(ctx, 0xfe);
+            ctx->code_point = 0;
+            if (!already_errored) {
+                insert_shift(ctx, 1);
+                ctx->raw_putchar(ctx, 0xfe);
+            }
             goto unicode_error;
         }
 
         ctx->unicode_remaining--;
         ctx->code_point |= (uint64_t)(c & 0x3f) << (6 * ctx->unicode_remaining);
 
-        // Reject overlong encodings and out-of-range codepoints early
-        // by validating the first continuation byte against the lead byte.
+        // Drain remaining continuation bytes of a sequence already flagged bad.
+        if (ctx->code_point > 0x10ffff) {
+            return;
+        }
+
+        // Reject overlong encodings and out-of-range codepoints as soon as the
+        // partial codepoint proves the sequence invalid, emit one replacement,
+        // and drain the remaining continuation bytes silently.
         // 3-byte lead E0: first continuation must be >= 0xA0 (code_point >= 0x800)
         // 4-byte lead F0: first continuation must be >= 0x90 (code_point >= 0x10000)
         // 4-byte lead F4: first continuation must be <= 0x8F (code_point <= 0x10FFFF)
-        if (ctx->unicode_remaining == 1 && ctx->code_point < 0x800) {
-            ctx->unicode_remaining = 0;
-            goto unicode_error;
-        }
-        if (ctx->unicode_remaining == 2 && ctx->code_point < 0x10000) {
-            ctx->unicode_remaining = 0;
-            goto unicode_error;
-        }
-        if (ctx->unicode_remaining == 2 && ctx->code_point > 0x10ffff) {
-            ctx->unicode_remaining = 0;
-            goto unicode_error;
+        if ((ctx->unicode_remaining == 1 && ctx->code_point < 0x800) ||
+            (ctx->unicode_remaining == 2 && ctx->code_point < 0x10000) ||
+            (ctx->unicode_remaining == 2 && ctx->code_point > 0x10ffff)) {
+            insert_shift(ctx, 1);
+            ctx->last_printed_char = 0xfe;
+            ctx->last_was_graphic = true;
+            ctx->raw_putchar(ctx, 0xfe);
+            ctx->code_point = UINT64_MAX;
+            return;
         }
 
         if (ctx->unicode_remaining != 0) {
@@ -2022,7 +2036,7 @@ static void flanterm_putchar(struct flanterm_context *ctx, uint8_t c) {
     }
 
 unicode_error:
-    if (c >= 0xc2 && c <= 0xf4) {
+    if (ctx->escape == false && c >= 0xc2 && c <= 0xf4) {
         ctx->g_select = 0;
         if (c >= 0xc2 && c <= 0xdf) {
             ctx->unicode_remaining = 1;
@@ -2127,94 +2141,126 @@ void flanterm_set_callback(struct flanterm_context *ctx, void (*callback)(struct
 }
 
 void flanterm_get_cursor_pos(struct flanterm_context *ctx, size_t *x, size_t *y) {
-	ctx->get_cursor_pos(ctx, x, y);
+    ctx->get_cursor_pos(ctx, x, y);
 }
 
 void flanterm_set_cursor_pos(struct flanterm_context *ctx, size_t x, size_t y) {
-	if (x >= ctx->cols) {
-		x = ctx->cols - 1;
-	}
+    if (x >= ctx->cols) {
+        x = ctx->cols - 1;
+    }
 
-	if (y >= ctx->rows) {
-		y = ctx->rows - 1;
-	}
+    if (y >= ctx->rows) {
+        y = ctx->rows - 1;
+    }
 
-	ctx->set_cursor_pos(ctx, x, y);
+    ctx->set_cursor_pos(ctx, x, y);
+
+    if (ctx->autoflush) {
+        ctx->double_buffer_flush(ctx);
+    }
 }
 
 void flanterm_set_text_fg(struct flanterm_context *ctx, size_t colour, bool bright) {
-	ctx->current_primary = colour;
+    if (colour >= 8) {
+        return;
+    }
 
-	if (bright) {
-		if (!ctx->reverse_video) {
-			ctx->set_text_fg_bright(ctx, colour);
-		} else {
-			ctx->set_text_bg_bright(ctx, colour);
-		}
-	} else {
-		if (!ctx->reverse_video) {
-			ctx->set_text_fg(ctx, colour);
-		} else {
-			ctx->set_text_bg(ctx, colour);
-		}
-	}
+    ctx->current_primary = colour;
+
+    if (bright) {
+        if (!ctx->reverse_video) {
+            ctx->set_text_fg_bright(ctx, colour);
+        } else {
+            ctx->set_text_bg_bright(ctx, colour);
+        }
+    } else {
+        if (!ctx->reverse_video) {
+            ctx->set_text_fg(ctx, colour);
+        } else {
+            ctx->set_text_bg(ctx, colour);
+        }
+    }
+
+    if (ctx->autoflush) {
+        ctx->double_buffer_flush(ctx);
+    }
 }
 
 void flanterm_set_text_bg(struct flanterm_context *ctx, size_t colour, bool bright) {
-	ctx->current_bg = colour;
+    if (colour >= 8) {
+        return;
+    }
 
-	if (bright) {
-		if (!ctx->reverse_video) {
-			ctx->set_text_bg_bright(ctx, colour);
-		} else {
-			ctx->set_text_fg_bright(ctx, colour);
-		}
-	} else {
-		if (!ctx->reverse_video) {
-			ctx->set_text_bg(ctx, colour);
-		} else {
-			ctx->set_text_fg(ctx, colour);
-		}
-	}
+    ctx->current_bg = colour;
+
+    if (bright) {
+        if (!ctx->reverse_video) {
+            ctx->set_text_bg_bright(ctx, colour);
+        } else {
+            ctx->set_text_fg_bright(ctx, colour);
+        }
+    } else {
+        if (!ctx->reverse_video) {
+            ctx->set_text_bg(ctx, colour);
+        } else {
+            ctx->set_text_fg(ctx, colour);
+        }
+    }
+
+    if (ctx->autoflush) {
+        ctx->double_buffer_flush(ctx);
+    }
 }
 
 void flanterm_reset_text_fg(struct flanterm_context *ctx) {
-	ctx->current_primary = (size_t)-1;
+    ctx->current_primary = (size_t)-1;
 
-	if (!ctx->bold) {
-		if (!ctx->reverse_video) {
-			ctx->set_text_fg_default(ctx);
-		} else {
-			ctx->set_text_bg_default(ctx);
-		}
-	} else {
-		if (!ctx->reverse_video) {
-			ctx->set_text_fg_default_bright(ctx);
-		} else {
-			ctx->set_text_bg_default_bright(ctx);
-		}
-	}
+    if (ctx->reverse_video) {
+        ctx->swap_palette(ctx);
+    }
+
+    if (!ctx->bold) {
+        ctx->set_text_fg_default(ctx);
+    } else {
+        ctx->set_text_fg_default_bright(ctx);
+    }
+
+    if (ctx->reverse_video) {
+        ctx->swap_palette(ctx);
+    }
+
+    if (ctx->autoflush) {
+        ctx->double_buffer_flush(ctx);
+    }
 }
 
 void flanterm_reset_text_bg(struct flanterm_context *ctx) {
-	ctx->current_bg = (size_t)-1;
+    ctx->current_bg = (size_t)-1;
 
-	if (!ctx->bg_bold) {
-		if (!ctx->reverse_video) {
-			ctx->set_text_bg_default(ctx);
-		} else {
-			ctx->set_text_fg_default(ctx);
-		}
-	} else {
-		if (!ctx->reverse_video) {
-			ctx->set_text_bg_default_bright(ctx);
-		} else {
-			ctx->set_text_fg_default_bright(ctx);
-		}
-	}
+    if (ctx->reverse_video) {
+        ctx->swap_palette(ctx);
+    }
+
+    if (!ctx->bg_bold) {
+        ctx->set_text_bg_default(ctx);
+    } else {
+        ctx->set_text_bg_default_bright(ctx);
+    }
+
+    if (ctx->reverse_video) {
+        ctx->swap_palette(ctx);
+    }
+
+    if (ctx->autoflush) {
+        ctx->double_buffer_flush(ctx);
+    }
 }
 
 void flanterm_clear(struct flanterm_context *ctx, bool move) {
-	ctx->clear(ctx, move);
+    ctx->clear(ctx, move);
+
+    if (ctx->autoflush) {
+        ctx->double_buffer_flush(ctx);
+    }
 }
 
