@@ -54,7 +54,7 @@ void termInit()
         ansi_colors, ansi_bright, // Colors (normal then bright)
         &default_bg, &default_fg, // Default bg, then fb
         &default_bright_bg, &default_bright_fg, // Default bright bg, then bright fb
-        FM_T_437, 9, 16, 1,
+        CM_7X13, 7, 13, 0,
         0, 0,
         0,
         0
@@ -318,4 +318,38 @@ int klog(int logstatus, const char* restrict format, ...)
     kvprintf(format, parameters);
 
     va_end(parameters);
+}
+
+void switch_to_panic_bg(void)
+{
+    size_t width = 0;
+    size_t height = 0;
+    flanterm_get_dimensions(ft_ctx, &width, &height);
+
+    char c = 0x3d;
+
+    kputs(TTY_REDBG);
+
+    for (size_t i = 0; i < width; i++)
+    {
+        kputchar((int)c);
+    }
+
+    kputs("\r\n");
+}
+
+void pad_with_spaces(void)
+{
+    size_t width = 0;
+    size_t height = 0;
+    flanterm_get_dimensions(ft_ctx, &width, &height);
+
+    size_t cursor_x = 0;
+    size_t cursor_y = 0;
+    flanterm_get_cursor_pos(ft_ctx, &cursor_x, &cursor_y);
+
+    for (; cursor_x < width; cursor_x++)
+    {
+        kputchar(0x20);
+    }
 }

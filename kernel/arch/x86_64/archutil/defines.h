@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #define PAGE_SIZE 4096
+#define PAGE_SIZE_EXPONENT 0
 #define LARGE_PAGE_SIZE 0x200000ull
 #define LARGE_PAGE_SIZE_EXPONENT 9
 

@@ -28,6 +28,8 @@ struct physFrame allocate_page_random(struct randomInstance *ri);
 uint64_t ask_for_thread_denoter(void);
 bool should_get_new_thread_denoter(uint64_t td);
 
+struct physFrame gen_frame(uintptr_t phys_addr, uint8_t size, bool is_low);
+
 inline uintptr_t __attribute__((always_inline)) phys_to_hhdm(uint64_t addr)
 {
     return (uintptr_t)(addr + hhdm_response->offset);

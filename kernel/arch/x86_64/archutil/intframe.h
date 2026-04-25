@@ -63,5 +63,7 @@ inline bool __attribute__((always_inline)) is_placeholder(struct intframe* ifram
 }
 
 void print_registers(struct intframe* iframe);
+char *get_exception_name(uint8_t vector);
+
 
 #endif

@@ -54,5 +54,7 @@ char kputchar(int c);
 int kprintf(const char* restrict format, ...);
 int kvprintf(const char* restrict format, va_list prm);
 int klog(int logstatus, const char* restrict format, ...);
+void switch_to_panic_bg(void);
+void pad_with_spaces(void);
 
 #endif

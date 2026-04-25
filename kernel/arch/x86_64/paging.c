@@ -13,6 +13,7 @@ int map_page(struct pagemap *map, uintptr_t virt_addr, struct physFrame phys_add
     uint16_t pml3i = (virt_addr >> 30) & 0x1ff;
     uint16_t pml4i = (virt_addr >> 39) & 0x1ff;
 
+
     if (!(map->top_level[pml4i] & PAGE_DIRECTORY_PRESENT))
     {
         struct physFrame new_frame = allocate_page_generic(4);
@@ -20,6 +21,7 @@ int map_page(struct pagemap *map, uintptr_t virt_addr, struct physFrame phys_add
 
         set_table_flags(&map->top_level[pml4i], PAGE_DIRECTORY_PRESENT | PAGE_DIRECTORY_READWRITE | PAGE_DIRECTORY_USERSUPERVISOR);
     }
+
 
     uint64_t *pml3v = (uint64_t*)((map->top_level[pml4i] & ~PAGE_TABLE_ADDRESS_MASK) + hhdm_response->offset);
     if (!(pml3v[pml3i] & PAGE_DIRECTORY_PRESENT))
@@ -29,6 +31,7 @@ int map_page(struct pagemap *map, uintptr_t virt_addr, struct physFrame phys_add
 
         set_table_flags(&pml3v[pml3i], PAGE_DIRECTORY_PRESENT | PAGE_DIRECTORY_READWRITE | PAGE_DIRECTORY_USERSUPERVISOR);
     }
+
 
     uint64_t *pml2v = (uint64_t*)((pml3v[pml3i] & ~PAGE_TABLE_ADDRESS_MASK) + hhdm_response->offset);
 
@@ -43,6 +46,7 @@ int map_page(struct pagemap *map, uintptr_t virt_addr, struct physFrame phys_add
         return 0;
     }
 
+
     if (!(pml2v[pml2i] & PAGE_DIRECTORY_PRESENT))
     {
         struct physFrame new_frame = allocate_page_generic(6);
@@ -51,10 +55,12 @@ int map_page(struct pagemap *map, uintptr_t virt_addr, struct physFrame phys_add
         set_table_flags(&pml2v[pml2i], PAGE_DIRECTORY_PRESENT | PAGE_DIRECTORY_READWRITE | PAGE_DIRECTORY_USERSUPERVISOR);
     }
 
-    uint64_t *pml1v = (uint64_t*)((pml2v[pml2i] & ~PAGE_TABLE_ADDRESS_MASK) + hhdm_response->offset);
-    pml1v[pml1i] = ~PAGE_TABLE_ADDRESS_MASK & phys_addr.phys_addr;
 
-    set_table_flags((uint64_t*)(pml1v[pml1i]), PAGE_DIRECTORY_SIZE_BIT | (uint16_t)(flags & 0xFFFF));
+    uint64_t *pml1v = (uint64_t*)((pml2v[pml2i] & ~PAGE_TABLE_ADDRESS_MASK) + hhdm_response->offset);
+    pml1v[pml1i] = (uint64_t)(~PAGE_TABLE_ADDRESS_MASK & phys_addr.phys_addr);
+
+
+    set_table_flags(&pml1v[pml1i], (uint16_t)(flags & 0xFFFF));
     if (!(flags & MAP_EXECUTABLE)) set_table_nx((uint64_t*)(pml1v[pml1i]));
 
     releaseSpinlock(map->map_lock);

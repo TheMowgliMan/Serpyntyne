@@ -274,6 +274,15 @@ bool should_get_new_thread_denoter(uint64_t td)
      return false; // Shut up compiler
 }
 
+struct physFrame gen_frame(uintptr_t phys_addr, uint8_t size, bool is_low)
+{
+    struct physFrame ret;
+    ret.phys_addr = phys_addr;
+    ret.size = size;
+    ret.is_low = is_low;
+    return ret;
+}
+
 uint64_t initPmm(void)
 {
     klog(LOG_PROC, "Starting physical memory manager...\r\n");
@@ -286,14 +295,14 @@ uint64_t initPmm(void)
         if (entry->type == LIMINE_MEMMAP_USABLE)
         {
             usable_ram += entry->length;
-
-#ifdef DEBUG
-            kprintf(TTY_MAGENTA "RAM found: " TTY_HICYAN "type %d, " TTY_BLUE "base %x, " TTY_HIMAGENTA "length %x\r\n" TTY_RESET,
-                    (int64_t)(entry->type),
-                    (int64_t)(entry->base),
-                    (int64_t)(entry->length));
-#endif
         }
+
+        #ifdef DEBUG
+        kprintf(TTY_MAGENTA "RAM found: " TTY_HICYAN "type %d, " TTY_BLUE "base %x, " TTY_HIMAGENTA "length %x\r\n" TTY_RESET,
+                (int64_t)(entry->type),
+                (int64_t)(entry->base),
+                (int64_t)(entry->length));
+        #endif
 
         if (memmap_response->entry_count - i != 1 || entry->type == LIMINE_MEMMAP_USABLE)
         {
