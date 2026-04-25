@@ -41,9 +41,16 @@ static volatile struct limine_stack_size_request stack_size_request = {
     .stack_size = 0x100000
 };
 
+__attribute__((used, section(".limine_requests")))
+static volatile struct limine_executable_file_request executable_file_request = {
+    .id = LIMINE_EXECUTABLE_FILE_REQUEST_ID,
+    .revision = 0,
+};
+
 struct limine_memmap_response *memmap_response;
 struct limine_hhdm_response *hhdm_response;
 struct limine_framebuffer_response *framebuffer_response;
+struct limine_executable_file_response *executable_response;
 
 struct limine_framebuffer *limine_framebuffer_ctx = NULL;
 
@@ -73,4 +80,5 @@ void initializeLimineRequests(void)
 
     memmap_response = memmap_request.response;
     hhdm_response = hhdm_request.response;
+    executable_response = executable_file_request.response;
 }
