@@ -116,4 +116,6 @@ struct pagemap generate_pagemap(uint64_t *top_level, spinlock_t *spinlock);
 
 int map_page(struct pagemap *map, uintptr_t virt_addr, struct physFrame phys_addr, uint64_t flags);
 
+void check_page_align(uintptr_t virt_addr, uintptr_t phys_addr, uint64_t align);
+
 #endif

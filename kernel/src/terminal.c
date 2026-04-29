@@ -41,6 +41,8 @@ uint32_t default_bg = 0x00110d12;
 uint32_t default_bright_fg = 0x00ffffff;
 uint32_t default_bright_bg = 0x003e3546;
 
+bool is_in_code_mode = false;
+
 void termInit()
 {
     ft_ctx = flanterm_fb_init(
@@ -72,6 +74,11 @@ void kputs(const char* msg)
     releaseSpinlock(term_lock);
 }
 
+void kputs_unlocked(const char* msg)
+{
+    flanterm_write(ft_ctx, msg, strlen(msg));
+}
+
 void kerror(const char *msg)
 {
     kputs(TTY_RED);
@@ -88,9 +95,38 @@ char kputchar(int c)
     return cc;
 }
 
+char kputchar_unlocked(int c)
+{
+    char cc = (char)c;
+    flanterm_write(ft_ctx, &cc, 1);
+    return cc;
+}
+
 static bool print(const char* data, size_t length) {
     acquireSpinlock(term_lock, 0);
-    flanterm_write(ft_ctx, data, length);
+
+    for (uint64_t cc = 0; cc < length; cc++)
+    {
+        int c = (int)(data[cc]);
+
+        if (data[cc] == '`')
+        {
+            if (is_in_code_mode)
+            {
+                kputs_unlocked(TTY_RESETBG);
+                is_in_code_mode = false;
+            }
+            else
+            {
+                kputs_unlocked(TTY_BLUEBG);
+                is_in_code_mode = true;
+            }
+        } else
+        {
+            kputchar_unlocked(c);
+        }
+    }
+
     releaseSpinlock(term_lock);
     return true;
 }

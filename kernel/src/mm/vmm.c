@@ -144,3 +144,42 @@ void paging_init(void)
 
     klog(LOG_SUCCESS, "Virtual Memory Manager started!\r\n");
 }
+
+int map_multiple_pages(struct pagemap *map, uint64_t pages, uintptr_t virt_addr, struct physFrame phys_addr, uint64_t flags)
+{
+    check_page_align(virt_addr, phys_addr.phys_addr, PAGE_SIZE);
+    uint8_t size = phys_addr.size;
+
+    struct physFrame phys = gen_frame(phys_addr.phys_addr, size, false);
+
+    uint64_t inc = PAGE_SIZE;
+    if (size == LARGE_PAGE_SIZE_EXPONENT)
+        inc = LARGE_PAGE_SIZE;
+
+    uint64_t page;
+    for (page = 0; page < pages; page++)
+    {
+        map_page(map, virt_addr + (inc * page), phys, flags);
+        phys.phys_addr += inc;
+    }
+
+    return (int)page;
+}
+
+void *allocate_random_and_map(struct pagemap *map,
+                              struct randomInstance *ri,
+                              size_t bytes,
+                              uintptr_t virt_addr,
+                              uint64_t flags)
+{
+    size_t pages_to_allocate = ALIGN_UP(bytes, PAGE_SIZE) / PAGE_SIZE;
+    uintptr_t virt_base = ALIGN_DOWN(virt_addr, PAGE_SIZE);
+
+    for (uint64_t page = 0; page < pages_to_allocate; page++)
+    {
+        struct physFrame phys_addr = allocate_page_random(ri);
+        map_page(map, virt_base + (page * PAGE_SIZE), phys_addr, flags);
+    }
+
+    return (void*)virt_addr;
+}
