@@ -315,9 +315,11 @@ int klog(int logstatus, const char* restrict format, ...)
     va_list parameters;
     va_start(parameters, format);
 
-    kvprintf(format, parameters);
+    int c = kvprintf(format, parameters);
 
     va_end(parameters);
+
+    return c;
 }
 
 void switch_to_panic_bg(void)

@@ -32,7 +32,7 @@ void panic(struct intframe* iframe)
 void exception(uint64_t reason, int64_t data1, int64_t data2)
 {
     klog(LOG_ERROR, "Kernel error!\r\n");
-    kprintf(TTY_REDBG "Exception: %s\r\n" TTY_MAGENTA, getPanicMessage());
+    kprintf(TTY_REDBG "Exception: %s\r\n" TTY_RED, getPanicMessage());
     kprintf("Reason: %x ", (int64_t)reason);
 
     if (reason == NO_MEMORY)
@@ -85,6 +85,14 @@ void exception(uint64_t reason, int64_t data1, int64_t data2)
                 kprintf("(other cause)\r\nNo memory was found for a miscellanious system operation.\r\nWhen the cause is determined, please submit for it to be added to the panic list.\r\n");
         }
 
+        kernel_abort();
+    }
+
+    if (reason == MISALIGNED_PAGE)
+    {
+        kprintf("(MISALIGNED_PAGE)\r\n");
+        kprintf("A misaligned page was attempted to be mapped, virtual address %x, physical address %x!\r\nThe system is aborting, please restart it manually.\r\n",
+                data1, data2);
         kernel_abort();
     }
 }
