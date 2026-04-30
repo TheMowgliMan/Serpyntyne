@@ -12,8 +12,7 @@
 
 /* TESTING INCLUDES */
 
-#include <mm/heap.h>
-#include <memory.h>
+// Put test stuff here
 
 /* END TESTING INCLUDES */
 

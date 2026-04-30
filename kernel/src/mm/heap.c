@@ -17,7 +17,8 @@
 #include <stddef.h>
 
 struct alloc_page c;
-struct alloc_page kvmalloc_head;
+
+struct free_block *kvmalloc_head;
 
 void heap_init(void)
 {
@@ -27,13 +28,23 @@ void heap_init(void)
 
     c.current_page = (uint8_t*)allocate_random_and_map(kernel_page_table,
                                                        NULL,
-                                                       LARGE_PAGE_SIZE,
+                                                       ARCH_HEAP_ALLOCATE_SIZE,
                                                        kernel_page_table->heap_start,
                                                        MAP_NEWMAP | MAP_READABLE | MAP_WRITABLE | MAP_KERNEL);
-    c.size = LARGE_PAGE_SIZE_EXPONENT;
+    c.size = ARCH_HEAP_ALLOCATE_SIZE_EXPONENT;
 
-    kernel_page_table->heap_offset += LARGE_PAGE_SIZE;
+    kernel_page_table->heap_offset += ARCH_HEAP_ALLOCATE_SIZE;
     c.free_offset = 0;
+
+    // availability of krmalloc and friends begins here
+
+    kvmalloc_head = (struct free_block*)krcalloc(sizeof(struct free_block));
+    kvmalloc_head->data = krmalloc(ARCH_HEAP_ALLOCATE_SIZE);
+    kvmalloc_head->size = ARCH_HEAP_ALLOCATE_SIZE;
+    kvmalloc_head->free_offset = 0;
+    kvmalloc_head->next = NULL;
+
+    // now all malloc varieties are available
 
     klog(LOG_SUCCESS, "Heap started!\r\n");
 }
@@ -47,23 +58,34 @@ void *krmalloc(size_t size)
 
         return (void*)(&c.current_page[idx]);
     }
-    else if (size > PAGE_SIZE)
+    else if (size > ARCH_HEAP_MAP_IF_LARGER_SIZE)
     {
         void *ret = (void*)allocate_random_and_map(kernel_page_table, NULL, size,
                                                    kernel_page_table->heap_start + kernel_page_table->heap_offset,
                                                    MAP_NEWMAP | MAP_READABLE | MAP_WRITABLE | MAP_KERNEL);
 
-        kernel_page_table->heap_offset += ALIGN_UP(size, PAGE_SIZE);
+        kernel_page_table->heap_offset += ALIGN_UP(size, PAGE_SIZE); // allocate_random_and_map() always aligns up to the arch page size
         return ret;
     }
     else
     {
+        if (page_exponent_to_standard(c.size) - c.free_offset > ARCH_WIDTH)
+        {
+            struct free_block *new = (struct free_block*)krmalloc(sizeof(struct free_block));
+            new->data = (void*)(c.current_page + c.free_offset);
+            new->size = page_exponent_to_standard(c.size) - c.free_offset;
+            new->free_offset = 0;
+
+            new->next = kvmalloc_head;
+            kvmalloc_head = new;
+        }
+
         c.current_page = (uint8_t*)allocate_random_and_map(kernel_page_table,
                                                            NULL,
-                                                           LARGE_PAGE_SIZE,
+                                                           ARCH_HEAP_ALLOCATE_SIZE,
                                                            kernel_page_table->heap_start + kernel_page_table->heap_offset,
                                                            MAP_NEWMAP | MAP_READABLE | MAP_WRITABLE | MAP_KERNEL);
-        kernel_page_table->heap_offset += LARGE_PAGE_SIZE;
+        kernel_page_table->heap_offset += ARCH_HEAP_ALLOCATE_SIZE;
         c.free_offset = ALIGN_UP(size, ARCH_WIDTH);
 
         return (void*)(&c.current_page[0]);
@@ -87,4 +109,25 @@ void *xkrmalloc(size_t size)
         exception(OUT_OF_MEMORY, OOM_XKRMALLOC_CALL, 0);
     }
     return ret;
+}
+
+void *kvmalloc(size_t size)
+{
+    uint8_t *ret = NULL;
+    for (struct free_block *cur = kvmalloc_head; cur != NULL; cur = cur->next)
+    {
+        if (cur->size - cur->free_offset > size)
+        {
+            ret = (uint8_t*)cur->data + cur->free_offset;
+            cur->free_offset += ALIGN_UP(size, ARCH_WIDTH);
+            break;
+        }
+    }
+
+    if (ret == NULL || ret == 0)
+    {
+        ret = krmalloc(size);
+    }
+
+    return (void*)ret;
 }
