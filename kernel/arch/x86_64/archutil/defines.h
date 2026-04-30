@@ -23,4 +23,9 @@ typedef uint64_t virt_addr_t;
 
 typedef uint64_t uintarch_t;
 
+inline static uint64_t __attribute__((always_inline)) page_exponent_to_standard(uint8_t exponent)
+{
+    return (uint64_t)((2ull << exponent) * 4096);
+}
+
 #endif

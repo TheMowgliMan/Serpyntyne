@@ -12,19 +12,14 @@
 #include <util/elf.h>
 #include <memory.h>
 
+/*
+ * In the kernel apge table:
+ *  - fs_end is the end of HHDM
+ */
 struct pagemap kpt;
 struct pagemap *kernel_page_table;
 
 spinlock_t kernel_vmm_lock;
-
-void debug_hhdm(uintptr_t vaddr, uintptr_t paddr, uint64_t flags, bool isbig)
-{
-    // klog(LOG_NOTICE, "Mapping HHDM: %x flags, %x vaddr, %x paddr, ", (int64_t)flags, (int64_t)vaddr, (int64_t)paddr);
-    // if (isbig)
-    //     kprintf("big: yes\r\n");
-    // else
-    //     kprintf("big: no\r\n");
-}
 
 void paging_init(void)
 {
@@ -68,7 +63,6 @@ void paging_init(void)
         {
             if (addr + LARGE_PAGE_SIZE <= cieling && IS_ALIGNED(addr, LARGE_PAGE_SIZE))
             {
-                debug_hhdm((uintptr_t)(addr + hhdm_response->offset), addr, flags, true);
                 tmpf = gen_frame(addr, LARGE_PAGE_SIZE_EXPONENT, false);
 
                 map_page(kernel_page_table, (uintptr_t)(addr + hhdm_response->offset), tmpf, flags);
@@ -76,13 +70,14 @@ void paging_init(void)
             }
             else if (addr + PAGE_SIZE <= cieling && IS_ALIGNED(addr, PAGE_SIZE))
             {
-                debug_hhdm((uintptr_t)(addr + hhdm_response->offset), addr, flags, false);
                 tmpf = gen_frame(addr, PAGE_SIZE_EXPONENT, false);
 
                 map_page(kernel_page_table, (uintptr_t)(addr + hhdm_response->offset), tmpf, flags);
                 addr += PAGE_SIZE;
             }
         }
+
+        kernel_page_table->fs_end = cieling + hhdm_response->offset;
     }
 
 #ifdef DEBUG
@@ -133,14 +128,21 @@ void paging_init(void)
 
             map_page(kernel_page_table, v_addr, p_addr, flags);
         }
+
+        kernel_page_table->kernel_end = virtual_base + pages_to_map * PAGE_SIZE;
     }
 
+    kernel_page_table->kernel_start = executable_address_response->virtual_base;
+
 #ifdef DEBUG
+    klog(LOG_NOTICE, "HHDM End: %x; Kernel Start: %x; Kernel End: %x\r\n", (int64_t)kernel_page_table->fs_end, (int64_t)kernel_page_table->kernel_start, (int64_t)kernel_page_table->kernel_end);
     klog(LOG_NOTICE, "Switching to new page table!\r\n");
 #endif
 
     uintptr_t kptaddr = kernel_top_level_paging_directory_phys_addr;
     load_cr3(kptaddr);
+
+    kernel_page_table->heap_start = ALIGN_UP(kernel_page_table->fs_end, PAGE_SIZE);
 
     klog(LOG_SUCCESS, "Virtual Memory Manager started!\r\n");
 }

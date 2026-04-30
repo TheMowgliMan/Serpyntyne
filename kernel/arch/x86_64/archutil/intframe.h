@@ -62,8 +62,20 @@ inline bool __attribute__((always_inline)) is_placeholder(struct intframe* ifram
     return false;
 }
 
+inline bool __attribute__((always_inline)) is_debug(struct intframe *iframe)
+{
+    uint8_t v = (uint8_t)iframe->vector;
+
+    if (v == 0x01) return true;
+    return false;
+}
+
 void print_registers(struct intframe* iframe);
 char *get_exception_name(uint8_t vector);
 
+inline void __attribute__((always_inline)) raise_debug_interrupt(void)
+{
+    asm volatile ("int $0x01");
+}
 
 #endif

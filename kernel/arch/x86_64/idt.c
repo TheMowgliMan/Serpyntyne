@@ -33,6 +33,7 @@ void initIDT()
   }
 
   generateIDTEntry(0x00, 1, 0x8e, (void (*)())isr0x00);
+  generateIDTEntry(0x01, 1, 0x8e, (void (*)())isr0x01);
   generateIDTEntry(0x06, 1, 0x8e, (void (*)())isr0x06);
   generateIDTEntry(0x08, 0, 0x8e, (void (*)())isr0x08);
   generateIDTEntry(0x0d, 1, 0x8e, (void (*)())isr0x0D);

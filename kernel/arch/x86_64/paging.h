@@ -69,6 +69,15 @@
 struct pagemap {
     uint64_t *top_level;
     spinlock_t *map_lock;
+
+    uintptr_t kernel_start;
+    uintptr_t kernel_end;
+
+    uintptr_t fs_end; // This and...
+    uintptr_t gs_end; // this are available markers to be defined by the kernel for its purposes
+
+    uintptr_t heap_start; // Virt addr of the heap
+    size_t heap_offset; // Length of the heap on the virtual address space
 };
 
 inline void __attribute__((always_inline)) set_table_base_address(uint64_t *table, uint64_t addr)

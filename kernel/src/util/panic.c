@@ -10,21 +10,33 @@ void panic(struct intframe* iframe)
 {
     // This file doesn't actually know what 'iframe' looks like, as it's architecture-specific.
     // Therefore, any interaction with it must be mediated by archutil functions.
-    klog(LOG_ERROR, "Kernel panic!\r\n");
-    switch_to_panic_bg();
-
-    kprintf(TTY_REDBG "Panic: %s" TTY_REDBG, getPanicMessage()); pad_with_spaces();
-    kprintf("\r\nError code: %b ", (int64_t)get_error_code(iframe));
-    uint64_t v = get_vector(iframe);
-    kprintf("Vector: %x", (int64_t)v); pad_with_spaces();
-    kprintf("\r\n(%s)", get_exception_name(v)); pad_with_spaces();
-
-    if (is_placeholder(iframe))
+    if (!is_debug(iframe))
     {
-        kprintf("\r\nNote that this is a placeholder interrupt routine."); pad_with_spaces(); kprintf("\r\nPlease find the culprit and add a proper panic handler.");
-    }
+        klog(LOG_ERROR, "Kernel panic!\r\n");
+        switch_to_panic_bg();
 
-    print_registers(iframe);
+        kprintf(TTY_REDBG "Panic: %s" TTY_REDBG, getPanicMessage()); pad_with_spaces();
+        kprintf("\r\nError code: %b ", (int64_t)get_error_code(iframe));
+        uint64_t v = get_vector(iframe);
+        kprintf("Vector: %x", (int64_t)v); pad_with_spaces();
+        kprintf("\r\n(%s)", get_exception_name(v)); pad_with_spaces();
+
+        if (is_placeholder(iframe))
+        {
+            kprintf("\r\nNote that this is a placeholder interrupt routine."); pad_with_spaces(); kprintf("\r\nPlease find the culprit and add a proper panic handler.");
+        }
+
+        print_registers(iframe);
+    } else
+    {
+        switch_to_panic_bg();
+
+        uint64_t v = get_vector(iframe);
+        kprintf("Vector: %x", (int64_t)v); pad_with_spaces();
+        kprintf("\r\n(%s)", get_exception_name(v)); pad_with_spaces();
+
+        print_registers(iframe);
+    }
 
     kernel_abort();
 }
@@ -81,9 +93,14 @@ void exception(uint64_t reason, int64_t data1, int64_t data2)
             case OOM_PMM_SPINLOCKS_CREATION:
                 kprintf("(OOM_PMM_SPINLOCKS_CREATION)\r\nNo place was found for physical memory manager spinlocks.\r\n");
                 break;
+            case OOM_XKRMALLOC_CALL:
+                kprintf("(OOM_XKRMALLOC_CALL)\r\nThe system ran out of memory during an xkrmalloc() call!\r\n");
+                break;
             default:
                 kprintf("(other cause)\r\nNo memory was found for a miscellanious system operation.\r\nWhen the cause is determined, please submit for it to be added to the panic list.\r\n");
         }
+
+        raise_debug_interrupt();
 
         kernel_abort();
     }

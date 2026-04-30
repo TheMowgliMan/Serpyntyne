@@ -90,5 +90,15 @@ struct pagemap generate_pagemap(uint64_t *top_level, spinlock_t *spinlock)
     struct pagemap pm;
     pm.top_level = top_level;
     pm.map_lock = spinlock;
+
+    pm.kernel_start = 0;
+    pm.kernel_end = 0;
+
+    pm.fs_end = 0;
+    pm.gs_end = 0;
+
+    pm.heap_start = 0;
+    pm.heap_offset = 0;
+
     return pm;
 }

@@ -1,6 +1,7 @@
 #include <util/postinit.h>
 #include <mm/pmm.h>
 #include <mm/vmm.h>
+#include <mm/heap.h>
 #include <terminal.h>
 #include <util/random.h>
 
@@ -14,6 +15,8 @@ void postInit(void)
     klog(LOG_NOTICE, "Usable RAM: %d bytes\r\n", (int64_t)free_ram);
 
     paging_init();
+
+    heap_init();
 
     klog(LOG_SUCCESS, "Post-init complete!\r\n");
 }

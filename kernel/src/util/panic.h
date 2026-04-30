@@ -13,6 +13,7 @@
 
 #define OOM_PMM_FRAME_CREATION 0ll
 #define OOM_PMM_SPINLOCKS_CREATION 1ll
+#define OOM_XKRMALLOC_CALL 2ll
 
 void panic(struct intframe* iframe);
 void exception(uint64_t reason, int64_t data1, int64_t data2);
