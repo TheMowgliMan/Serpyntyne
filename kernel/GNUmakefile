@@ -90,6 +90,7 @@ override CPPFLAGS := \
     -I limine-protocol/include \
     -I flanterm/src \
     -I arch/x86_64 \
+    -I uacpi/include
     -isystem freestnd-c-hdrs/include \
     $(CPPFLAGS) \
     -MMD \
@@ -112,7 +113,7 @@ override LDFLAGS += \
 
 # Use "find" to glob all *.c, *.S, and *.asm files in the tree and obtain the
 # object and header dependency file names.
-override SRCFILES := $(shell find -L src cc-runtime/src flanterm/src arch/x86_64 -type f 2>/dev/null | LC_ALL=C sort)
+override SRCFILES := $(shell find -L src cc-runtime/src flanterm/src arch/x86_64 uacpi/source -type f 2>/dev/null | LC_ALL=C sort)
 override CFILES := $(filter %.c,$(SRCFILES))
 override ASFILES := $(filter %.S,$(SRCFILES))
 override NASMFILES := $(filter %.asm,$(SRCFILES))

@@ -31,5 +31,9 @@ void *krcalloc(size_t size);
 void *xkrmalloc(size_t size);
 
 void *kvmalloc(size_t size);
+void *kvcalloc(size_t size);
+void *xkvmalloc(size_t size);
+
+void free_sized(void *ptr, size_t size);
 
 #endif
