@@ -114,14 +114,20 @@ void *xkrmalloc(size_t size)
 void *kvmalloc(size_t size)
 {
     uint8_t *ret = NULL;
+    struct free_block *prev = NULL;
     for (struct free_block *cur = kvmalloc_head; cur != NULL; cur = cur->next)
     {
         if (cur->size - cur->free_offset > size)
         {
+            if (prev != NULL)
+                prev->next = cur->next;
+
             ret = (uint8_t*)cur->data + cur->free_offset;
             cur->free_offset += ALIGN_UP(size, ARCH_WIDTH);
             break;
         }
+
+        prev = cur;
     }
 
     if (ret == NULL || ret == 0)
@@ -130,4 +136,39 @@ void *kvmalloc(size_t size)
     }
 
     return (void*)ret;
+}
+
+void *kvcalloc(size_t size)
+{
+    void *ret = kvmalloc(size);
+    memset(ret, 0, size);
+    return ret;
+}
+
+void *xkvmalloc(size_t size)
+{
+    void *ret = krmalloc(size);
+    if (ret == NULL || ret == 0)
+    {
+        exception(OUT_OF_MEMORY, OOM_XKVMALLOC_CALL, 0);
+    }
+    return ret;
+}
+
+void free_sized(void *ptr, size_t size)
+{
+    struct free_block *b = NULL;
+    if (size > sizeof(struct free_block))
+        b = (struct free_block*)ptr;
+    else
+        b = krmalloc(sizeof(struct free_block));
+
+    b->data = ptr;
+    b->size = size;
+    b->free_offset = 0;
+
+    b->next = kvmalloc_head;
+    kvmalloc_head = b;
+
+    ptr = NULL;
 }

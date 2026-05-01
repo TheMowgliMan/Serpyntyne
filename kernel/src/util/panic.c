@@ -96,6 +96,9 @@ void exception(uint64_t reason, int64_t data1, int64_t data2)
             case OOM_XKRMALLOC_CALL:
                 kprintf("(OOM_XKRMALLOC_CALL)\r\nThe system ran out of memory during an xkrmalloc() call!\r\n");
                 break;
+            case OOM_XKVMALLOC_CALL:
+                kprintf("(OOM_XKRMALLOC_CALL)\r\nThe system ran out of memory during an xkvmalloc() call!\r\n");
+                break;
             default:
                 kprintf("(other cause)\r\nNo memory was found for a miscellanious system operation.\r\nWhen the cause is determined, please submit for it to be added to the panic list.\r\n");
         }
