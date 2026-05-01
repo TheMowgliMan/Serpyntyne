@@ -5,6 +5,8 @@
 #include <terminal.h>
 #include <util/random.h>
 
+#include <uacpi/uacpi.h>
+
 void postInit(void)
 {
     klog(LOG_PROC, "Post-initializing...\r\n");
@@ -17,6 +19,11 @@ void postInit(void)
     paging_init();
 
     heap_init();
+
+    klog(LOG_PROC, "Starting uACPI...\r\n");
+
+    void *uacpi_early_buf = krmalloc(32768);
+    uacpi_setup_early_table_access(uacpi_early_buf, 32768);
 
     klog(LOG_SUCCESS, "Post-init complete!\r\n");
 }

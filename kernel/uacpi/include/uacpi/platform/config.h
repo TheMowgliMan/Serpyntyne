@@ -13,7 +13,7 @@
  * =======================
  */
 #ifndef UACPI_DEFAULT_LOG_LEVEL
-    #define UACPI_DEFAULT_LOG_LEVEL UACPI_LOG_INFO
+    #define UACPI_DEFAULT_LOG_LEVEL UACPI_LOG_DEBUG
 #endif
 
 UACPI_BUILD_BUG_ON_WITH_MSG(
@@ -58,21 +58,21 @@ UACPI_BUILD_BUG_ON_WITH_MSG(
  * strings and va_args instead of a pre-formatted string. Can be useful if
  * your native logging is implemented in terms of this format as well.
  */
-// #define UACPI_FORMATTED_LOGGING
+//#define UACPI_FORMATTED_LOGGING
 
 /*
  * Makes uacpi_kernel_free take in an additional 'size_hint' parameter, which
  * contains the size of the original allocation. Note that this comes with a
  * performance penalty in some cases.
  */
-// #define UACPI_SIZED_FREES
+#define UACPI_SIZED_FREES
 
 
 /*
  * Makes uacpi_kernel_alloc_zeroed mandatory to implement by the host, uACPI
  * will not provide a default implementation if this is enabled.
  */
-// #define UACPI_NATIVE_ALLOC_ZEROED
+//#define UACPI_NATIVE_ALLOC_ZEROED
 
 /*
  * =========================
@@ -124,7 +124,7 @@ UACPI_BUILD_BUG_ON_WITH_MSG(
  *   ECAM, etc., but doesn't yet have enough subsystems implemented in order
  *   to run a fully-featured AML interpreter.
  */
-// #define UACPI_BAREBONES_MODE
+#define UACPI_BAREBONES_MODE
 
 /*
  * =============

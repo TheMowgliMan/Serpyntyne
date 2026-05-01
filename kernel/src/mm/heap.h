@@ -36,4 +36,6 @@ void *xkvmalloc(size_t size);
 
 void free_sized(void *ptr, size_t size);
 
+void *knock_a_few_bytes_off_the_old_heap_block(uintptr_t phys_base, uintptr_t offset);
+
 #endif

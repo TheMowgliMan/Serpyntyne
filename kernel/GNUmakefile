@@ -90,7 +90,7 @@ override CPPFLAGS := \
     -I limine-protocol/include \
     -I flanterm/src \
     -I arch/x86_64 \
-    -I uacpi/include
+    -I uacpi/include \
     -isystem freestnd-c-hdrs/include \
     $(CPPFLAGS) \
     -MMD \

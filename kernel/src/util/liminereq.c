@@ -53,11 +53,18 @@ static volatile struct limine_executable_address_request executable_address_requ
     .revision = 0
 };
 
+__attribute__((used, section(".limine_requests")))
+static volatile struct limine_rsdp_request rsdp_request = {
+    .id = LIMINE_RSDP_REQUEST_ID,
+    .revision = 0
+};
+
 struct limine_memmap_response *memmap_response;
 struct limine_hhdm_response *hhdm_response;
 struct limine_framebuffer_response *framebuffer_response;
 struct limine_executable_file_response *executable_file_response;
 struct limine_executable_address_response *executable_address_response;
+struct limine_rsdp_response *rsdp_response;
 
 struct limine_framebuffer *limine_framebuffer_ctx = NULL;
 
@@ -90,4 +97,6 @@ void initializeLimineRequests(void)
 
     executable_file_response = executable_file_request.response;
     executable_address_response = executable_address_request.response;
+
+    rsdp_response = rsdp_request.response;
 }
