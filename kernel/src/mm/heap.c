@@ -191,20 +191,20 @@ void free_sized(void *ptr, size_t size)
     ptr = NULL;
 }
 
-void *knock_a_few_bytes_off_the_old_heap_block(uintptr_t phys_base, uintptr_t offset)
+void *knock_a_few_bytes_off_the_old_heap_block(uintptr_t phys_base, uintptr_t phys_top)
 {
     acquireSpinlock(kernel_heap_lock, 0);
 
     uintptr_t floor = ALIGN_DOWN(phys_base, PAGE_SIZE);
-    uintptr_t cieling = ALIGN_UP(phys_base + offset, PAGE_SIZE);
+    uintptr_t cieling = ALIGN_UP(phys_top, PAGE_SIZE);
 
     uint64_t pages_mapped = 0;
     for (uint64_t page = 0; page * PAGE_SIZE < cieling; page++)
     {
+        struct physFrame tmpf = gen_frame(floor + page * PAGE_SIZE, PAGE_SIZE_EXPONENT, false);
         map_page(kernel_page_table,
                  kernel_page_table->heap_start + kernel_page_table->heap_offset + page * PAGE_SIZE,
-                 gen_frame(phys_base + page * PAGE_SIZE, PAGE_SIZE_EXPONENT, false),
-                 MAP_NEWMAP | MAP_READABLE | MAP_WRITABLE | MAP_KERNEL);
+                 tmpf, MAP_NEWMAP | MAP_READABLE | MAP_WRITABLE | MAP_KERNEL);
 
         pages_mapped++;
     }

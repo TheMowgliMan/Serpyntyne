@@ -52,7 +52,7 @@ void paging_init(void)
         uintptr_t floor = (uintptr_t)(ALIGN_DOWN(entry->base, PAGE_SIZE));
         uintptr_t cieling = (uintptr_t)(ALIGN_UP(entry->base + entry->length, PAGE_SIZE));
 
-        uint64_t flags = MAP_READABLE | MAP_WRITABLE | MAP_EXECUTABLE | MAP_USER;
+        uint64_t flags = MAP_READABLE | MAP_WRITABLE | MAP_EXECUTABLE | MAP_KERNEL;
         if (entry->type == LIMINE_MEMMAP_FRAMEBUFFER)
             flags |= MAP_WRITETHROUGH | MAP_CACHEDISABLE;
 

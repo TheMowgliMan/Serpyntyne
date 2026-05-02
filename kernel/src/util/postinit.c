@@ -25,5 +25,8 @@ void postInit(void)
     void *uacpi_early_buf = krmalloc(32768);
     uacpi_setup_early_table_access(uacpi_early_buf, 32768);
 
+    if (!uacpi_table_subsystem_available())
+        klog(LOG_ERROR, "uACPI table subsytem is unavailable!");
+
     klog(LOG_SUCCESS, "Post-init complete!\r\n");
 }
