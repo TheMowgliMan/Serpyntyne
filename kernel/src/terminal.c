@@ -323,8 +323,11 @@ int kprintf(const char* restrict format, ...)
     va_end(parameters);
 }
 
-int klog(int logstatus, const char* restrict format, ...)
+int kvlog(int logstatus, const char* restrict format, va_list prm)
 {
+    va_list parameters;
+    va_copy(parameters, prm);
+
     switch (logstatus) {
         case LOG_INFO:
             kputs("[  INFO   ] ");
@@ -348,14 +351,21 @@ int klog(int logstatus, const char* restrict format, ...)
             kputs("[" TTY_BROWN "INCORRECT" TTY_RESET "] ");
     }
 
-    va_list parameters;
-    va_start(parameters, format);
-
     int c = kvprintf(format, parameters);
 
     va_end(parameters);
 
     return c;
+}
+
+int klog(int logstatus, const char* restrict format, ...)
+{
+    va_list parameters;
+    va_start(parameters, format);
+
+    kvlog(logstatus, format, parameters);
+
+    va_end(parameters);
 }
 
 void switch_to_panic_bg(void)
