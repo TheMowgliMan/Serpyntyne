@@ -63,15 +63,9 @@ void *uacpi_kernel_map(uacpi_phys_addr addr, uacpi_size len)
     return (void*)(addr + hhdm_response->offset);
 }
 
-void uacpi_kernel_unmap(void *addr, uacpi_size len)
+void uacpi_kernel_unmap(void *addr, [[maybe_unused]] uacpi_size len)
 {
-    uintptr_t floor = (uintptr_t)addr;
-    uintptr_t cieling = (uintptr_t)addr + len;
-
-    floor = ALIGN_DOWN(floor, PAGE_SIZE);
-    cieling = ALIGN_UP(cieling, PAGE_SIZE);
-
-    free_sized((void*)floor, cieling - floor);
+    addr = NULL;
 }
 
 void uacpi_kernel_log(uacpi_log_level log_level, const uacpi_char *c)

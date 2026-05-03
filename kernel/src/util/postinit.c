@@ -6,6 +6,9 @@
 #include <util/random.h>
 
 #include <uacpi/uacpi.h>
+#include <uacpi/tables.h>
+#include <uacpi/log.h>
+#include <uacpi/context.h>
 
 void postInit(void)
 {
@@ -23,10 +26,17 @@ void postInit(void)
     klog(LOG_PROC, "Starting uACPI...\r\n");
 
     void *uacpi_early_buf = krmalloc(32768);
+
+    uacpi_context_set_log_level(UACPI_LOG_DEBUG);
+
     uacpi_setup_early_table_access(uacpi_early_buf, 32768);
 
     if (!uacpi_table_subsystem_available())
         klog(LOG_ERROR, "uACPI table subsytem is unavailable!");
+
+    uacpi_table *madt = krmalloc(4096);
+    kprintf("jumped out\r\n");
+    uacpi_table_find_by_signature("APIC", madt);
 
     klog(LOG_SUCCESS, "Post-init complete!\r\n");
 }

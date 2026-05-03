@@ -59,16 +59,26 @@ void *krmalloc(size_t size)
 {
     acquireSpinlock(kernel_heap_lock, 0);
 
-    if (page_exponent_to_standard(c.size) - c.free_offset > size)
+    kprintf("made it here1\r\n");
+
+    if (PAGEEXP_TO_DIRECT(c.size) - c.free_offset > size)
     {
+        kprintf("made it here2\r\n");
+        kprintf("Space remaining: %d\r\n", (int64_t)(PAGEEXP_TO_DIRECT(c.size) - c.free_offset));
         size_t idx = c.free_offset;
+        kprintf("made it here2.1\r\n");
         c.free_offset += ALIGN_UP(size, ARCH_WIDTH);
+        kprintf("made it here2.2\r\n");
+
+        kprintf("idx: %d, free_offset: %d\r\n", (int64_t)idx, (int64_t)c.free_offset);
 
         releaseSpinlock(kernel_heap_lock);
-        return (void*)(&c.current_page[idx]);
+        kprintf("made it here2.3\r\n");
+        return (void*)(c.current_page + idx);
     }
     else if (size > ARCH_HEAP_MAP_IF_LARGER_SIZE)
     {
+        kprintf("made it here3\r\n");
         void *ret = (void*)allocate_random_and_map(kernel_page_table, NULL, size,
                                                    kernel_page_table->heap_start + kernel_page_table->heap_offset,
                                                    MAP_NEWMAP | MAP_READABLE | MAP_WRITABLE | MAP_KERNEL);
@@ -80,11 +90,13 @@ void *krmalloc(size_t size)
     }
     else
     {
-        if (page_exponent_to_standard(c.size) - c.free_offset > ARCH_WIDTH)
+        kprintf("made it here4\r\n");
+        if (PAGEEXP_TO_DIRECT(c.size) - c.free_offset > ARCH_WIDTH)
         {
+            kprintf("made it here5\r\n");
             struct free_block *new = (struct free_block*)krmalloc(sizeof(struct free_block));
             new->data = (void*)(c.current_page + c.free_offset);
-            new->size = page_exponent_to_standard(c.size) - c.free_offset;
+            new->size = PAGEEXP_TO_DIRECT(c.size) - c.free_offset;
             new->free_offset = 0;
 
             new->next = kvmalloc_head;
@@ -102,6 +114,8 @@ void *krmalloc(size_t size)
         releaseSpinlock(kernel_heap_lock);
         return (void*)(&c.current_page[0]);
     }
+
+    kprintf("made it here6\r\n");
 
     releaseSpinlock(kernel_heap_lock);
 
