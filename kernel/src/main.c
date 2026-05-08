@@ -37,7 +37,7 @@ void kmain(void) {
     kprintf("Serpyntyne: %s \r\n", getStartMessage());
 
     // We're done, just hang...
-    klog(LOG_ERROR, "We're done, hanging...\r\n");
+    klog(LOG_NOTICE, "End kernel boot logs.\r\n");
 
     hcf();
 }

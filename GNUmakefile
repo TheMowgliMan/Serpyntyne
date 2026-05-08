@@ -4,7 +4,7 @@
 # Use MQ="-d int -debugcon stdio" if problems
 MQ :=
 # Default user QEMU flags. These are appended to the QEMU command calls.
-QEMUFLAGS := -m 6G -M q35 -no-reboot $(MQ)
+QEMUFLAGS := -m 6G -smp cpus=4 -no-reboot $(MQ)
 
 override IMAGE_NAME := serpyntyne
 
@@ -58,7 +58,7 @@ edk2-ovmf:
 
 limine/limine:
 	rm -rf limine
-	git clone https://codeberg.org/Limine/Limine.git limine --branch=v11.x-binary --depth=1
+	git clone https://github.com/Limine-Bootloader/Limine.git limine --branch=v11.x-binary --depth=1
 	$(MAKE) -C limine \
 		CC="$(HOST_CC)" \
 		CFLAGS="$(HOST_CFLAGS)" \

@@ -128,7 +128,8 @@ char *panic_notes[PANIC_NOTES] = {
     "printer on fire, round two!",
     "at the disco!",
     "but I can't make an exception for you!",
-    "b l u e   s c r e e n   o f   d e a t h   (not)"
+    "b l u e   s c r e e n   o f   d e a t h   (not)",
+    "\\(T_T)/"
 };
 
 char *getStartMessage(void)

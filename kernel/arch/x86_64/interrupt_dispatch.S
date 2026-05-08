@@ -61,6 +61,8 @@ isr\vector :
 
     pop_registers
     add $16, %rsp
+
+    sti
     iretq
 .endm
 

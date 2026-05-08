@@ -59,12 +59,28 @@ static volatile struct limine_rsdp_request rsdp_request = {
     .revision = 0
 };
 
+__attribute__((used, section(".limine_requests")))
+static volatile struct limine_mp_request mp_request = {
+    .id = LIMINE_MP_REQUEST_ID,
+    .revision = 0,
+    .flags = 0 // x2APIC isn't implemented yet
+};
+
+__attribute__((used, section(".limine_requests")))
+static volatile struct limine_tsc_frequency_request tsc_frequency_request = {
+    .id = LIMINE_TSC_FREQUENCY_REQUEST_ID,
+    .revision = 0,
+    .response = NULL // So we can abort if it doesn't exist (we don't use PIT calibration for now)
+};
+
 struct limine_memmap_response *memmap_response;
 struct limine_hhdm_response *hhdm_response;
 struct limine_framebuffer_response *framebuffer_response;
 struct limine_executable_file_response *executable_file_response;
 struct limine_executable_address_response *executable_address_response;
 struct limine_rsdp_response *rsdp_response;
+struct limine_mp_response *mp_response;
+struct limine_tsc_frequency_response *tsc_frequency_response;
 
 struct limine_framebuffer *limine_framebuffer_ctx = NULL;
 
@@ -99,4 +115,7 @@ void initializeLimineRequests(void)
     executable_address_response = executable_address_request.response;
 
     rsdp_response = rsdp_request.response;
+
+    mp_response = mp_request.response;
+    tsc_frequency_response = tsc_frequency_request.response;
 }

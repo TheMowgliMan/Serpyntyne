@@ -1,14 +1,15 @@
 #include <util/postinit.h>
+
 #include <mm/pmm.h>
 #include <mm/vmm.h>
 #include <mm/heap.h>
+
 #include <terminal.h>
+
 #include <util/random.h>
 
-#include <uacpi/uacpi.h>
-#include <uacpi/tables.h>
-#include <uacpi/log.h>
-#include <uacpi/context.h>
+#include <acpi/acpi.h>
+#include <acpi/cpu.h>
 
 void postInit(void)
 {
@@ -23,20 +24,9 @@ void postInit(void)
 
     heap_init();
 
-    klog(LOG_PROC, "Starting uACPI...\r\n");
+    prepare_cpus();
 
-    void *uacpi_early_buf = krmalloc(32768);
-
-    uacpi_context_set_log_level(UACPI_LOG_DEBUG);
-
-    uacpi_setup_early_table_access(uacpi_early_buf, 32768);
-
-    if (!uacpi_table_subsystem_available())
-        klog(LOG_ERROR, "uACPI table subsytem is unavailable!");
-
-    uacpi_table *madt = krmalloc(4096);
-    kprintf("jumped out\r\n");
-    uacpi_table_find_by_signature("APIC", madt);
+    init_acpi();
 
     klog(LOG_SUCCESS, "Post-init complete!\r\n");
 }

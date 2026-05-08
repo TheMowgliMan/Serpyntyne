@@ -1,25 +1,21 @@
 #include <stdint.h>
 #include <terminal.h>
+
 #include <util/atomics.h>
 
 #include <util/random.h>
+
+#include <archutil/asmstubs.h>
 
 uint64_t seed;
 spinlock_t global_random_instance_lock;
 spinlock_t *gril;
 
-static inline uint64_t rdtsc(void)
-{
-    uint32_t eax, edx;
-    asm volatile("rdtsc\n\t" : "=a" (eax), "=d" (edx));
-    return (uint64_t)eax | (uint64_t)edx << 32;
-}
-
 void rdtsc_seed_rand_instance(struct randomInstance *ri)
 {
     acquireSpinlock(&(ri->lock), 0);
 
-    ri->seed = (~ri->seed & UINT64_C(0xEFB38A9C0D39F73A)) ^ (rdtsc() + ri->seed) * 54477213871ul;
+    ri->seed = (~ri->seed & UINT64_C(0xEFB38A9C0D39F73A)) ^ (read_arch_time_stamp_counter() + ri->seed) * 54477213871ul;
     ri->seed = ri->seed * 0x2545F4914F6CDD1Dull;
 
     releaseSpinlock(&(ri->lock));
@@ -29,7 +25,7 @@ void rdtsc_seed_rand(void)
 {
     acquireSpinlock(gril, 0);
 
-    seed = (~seed & UINT64_C(0xEFB38A9C0D39F73A)) ^ (rdtsc() + seed) * 54477213871ul;
+    seed = (~seed & UINT64_C(0xEFB38A9C0D39F73A)) ^ (read_arch_time_stamp_counter() + seed) * 54477213871ul;
     seed *= 0x2545F4914F6CDD1Dull;
 
     releaseSpinlock(gril);
@@ -41,7 +37,7 @@ uint64_t random_instance(struct randomInstance *ri)
 
     if (ri->seed % 100 == 0)
     {
-        ri->seed = (~ri->seed & UINT64_C(0xEFB38A9C0D39F73A)) ^ (rdtsc() + ri->seed) * 54477213871ul;
+        ri->seed = (~ri->seed & UINT64_C(0xEFB38A9C0D39F73A)) ^ (read_arch_time_stamp_counter() + ri->seed) * 54477213871ul;
     }
     else
     {
@@ -64,7 +60,7 @@ uint64_t random(void)
 
     if (seed % 100 == 0)
     {
-        seed = (~seed & UINT64_C(0xEFB38A9C0D39F73A)) ^ (rdtsc() + seed) * 54477213871ul;
+        seed = (~seed & UINT64_C(0xEFB38A9C0D39F73A)) ^ (read_arch_time_stamp_counter() + seed) * 54477213871ul;
     }
     else
     {
@@ -113,7 +109,7 @@ void init_rand(void)
 
     acquireSpinlock(gril, 0);
 
-    seed = rdtsc() + 993319 + (rdtsc() << 33);
+    seed = read_arch_time_stamp_counter() + 993319 + (read_arch_time_stamp_counter() << 33);
     seed ^= seed >> 12;
     seed ^= seed << 25;
     seed ^= seed >> 27;
@@ -130,7 +126,7 @@ void init_rand_instance(struct randomInstance *ri)
 
     acquireSpinlock(&(ri->lock), 0);
 
-    ri->seed = rdtsc() + 993319 + (rdtsc() << 33);
+    ri->seed = read_arch_time_stamp_counter() + 993319 + (read_arch_time_stamp_counter() << 33);
     ri->seed ^= ri->seed >> 12;
     ri->seed ^= ri->seed << 25;
     ri->seed ^= ri->seed >> 27;

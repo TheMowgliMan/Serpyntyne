@@ -70,6 +70,14 @@ inline bool __attribute__((always_inline)) is_debug(struct intframe *iframe)
     return false;
 }
 
+inline bool __attribute__((always_inline)) is_apic_timer(struct intframe* iframe)
+{
+    uint8_t v = (uint8_t)iframe->vector;
+
+    if (v == 0xfa) return true;
+    return false;
+}
+
 void print_registers(struct intframe* iframe);
 char *get_exception_name(uint8_t vector);
 
