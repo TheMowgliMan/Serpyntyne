@@ -40,4 +40,6 @@ extern void setTss(uint16_t tss);
 void encodeGDTItem(uint8_t *target, struct GDTItem source);
 void initGDT(void);
 
+extern uint64_t tss_addr; // Idek if this is even necessary given I only use this from assembly lol
+
 #endif

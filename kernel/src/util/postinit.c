@@ -5,11 +5,19 @@
 #include <mm/heap.h>
 
 #include <terminal.h>
+#include <memory.h>
 
 #include <util/random.h>
 
 #include <acpi/acpi.h>
 #include <acpi/cpu.h>
+
+#include <process/scheduler.h>
+#include <process/process_data.h>
+
+extern scheduler_t *bsp_sched_ctx;
+
+uint64_t new_stack[8192];
 
 void postInit(void)
 {
@@ -25,6 +33,11 @@ void postInit(void)
     heap_init();
 
     prepare_cpus();
+
+    bsp_sched_ctx = (scheduler_t*)kvmalloc(sizeof(scheduler_t));
+    init_scheduler(bsp_sched_ctx);
+    scheduler_add_procedure(bsp_sched_ctx, test_proc1, 4096);
+    scheduler_add_procedure(bsp_sched_ctx, test_proc2, 4096);
 
     init_acpi();
 

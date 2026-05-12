@@ -3,6 +3,8 @@
 
 #include <util/liminereq.h>
 
+#include <util/random.h>
+
 #include <stdint.h>
 
 #define PROC_LOCK_UNLOCKED 0
@@ -17,15 +19,6 @@
 
 #define PROC_RT_PRIO_BOOST 10
 
-inline static uint32_t __attribute__((always_inline)) get_priority(struct process *pctx)
-{
-    uint32_t ret = 0;
-    ret += pctx->static_priority * pctx->dynamic_priority;
-    ret += (pctx->real_time_priority >= PROC_RT_RECOMMEND) ? (PROC_RT_PRIO_BOOST * (pctx->real_time_priority >> 2)) : 0;
-    ret += (pctx->real_time_priority >= PROC_RT_RECOMMEND && pctx->ticks_since_last_run >= pctx->desired_rt_interval) ? (PROC_RT_PRIO_BOOST * pctx->real_time_priority) : 0;
-    return ret;
-}
-
 struct __attribute__((packed)) process {
     uint32_t pid;
 
@@ -35,7 +28,7 @@ struct __attribute__((packed)) process {
     struct pagemap *proc_map;
 
     uint16_t static_priority;
-    uint16_t dynamic_priority;
+    uint64_t dynamic_priority;
 
     uint32_t real_time_priority;
     uint32_t ticks_since_last_run;
@@ -49,5 +42,23 @@ struct __attribute__((packed)) process {
 
     struct process *next;
 };
+
+inline static uint32_t __attribute__((always_inline)) get_priority(struct process *pctx)
+{
+    uint32_t ret = 0;
+    ret += pctx->static_priority * pctx->dynamic_priority;
+    ret += (pctx->real_time_priority >= PROC_RT_RECOMMEND && pctx->ticks_since_last_run >= pctx->desired_rt_interval) ? (PROC_RT_PRIO_BOOST * pctx->real_time_priority) : 0;
+    ret = (pctx->real_time_priority == PROC_RT_AVOID) ? (ret / pctx->dynamic_priority) : ret;
+
+    if (pctx->dynamic_priority < 5)
+        ret = 0;
+
+    ret += randrange(1, 3);
+
+    if (pctx->is_cur)
+        ret /= 2;
+
+    return ret;
+}
 
 #endif

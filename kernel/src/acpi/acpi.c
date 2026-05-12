@@ -112,7 +112,7 @@ void init_acpi(void)
 #endif
 
     write_lapic_register(0x320, 0xfa); // Setting the APIC timer to vector 0xFA also unmasks it and sets it to one-shot mode
-    write_lapic_register(0x3e0, 0x2); // APIC timer: divisor of sixteen
+    write_lapic_register(0x3e0, 0x3); // APIC timer: divisor of sixteen
 
     uint64_t old_time = read_arch_time_stamp_counter();
     APIC_TIMER_SET_INITIAL_COUNT(0xFFFFFFFF);
@@ -130,8 +130,8 @@ void init_acpi(void)
     klog(LOG_INFO, "Musec difference: %d, APIC timer value: %x\r\n", (int64_t)musec_difference, (int64_t)apic_timer_value);
 #endif
 
-    APIC_TIMER_SET_INITIAL_COUNT((0xffffffff - apic_timer_value) * (ALIGN_UP(300000, musec_difference) / musec_difference)); // Get an interrupt every 300ms please
+    APIC_TIMER_SET_INITIAL_COUNT(((0xffffffff - apic_timer_value) / 2000) * (ALIGN_UP(1000, musec_difference / 2000) / (musec_difference / 2000))); // Get an interrupt every 300ms please
 
     write_lapic_register(0x320, 0x200fa); // Re-enable APIC timer in periodic mode
-    write_lapic_register(0x3e0, 0x2); // Some say you must do the divisor again
+    write_lapic_register(0x3e0, 0x3); // Some say you must do the divisor again
 }

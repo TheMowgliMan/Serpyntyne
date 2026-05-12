@@ -21,6 +21,11 @@ static inline uint64_t __attribute__((always_inline)) read_arch_time_stamp_count
     return (uint64_t)eax | (uint64_t)edx << 32;
 }
 
+static inline void __attribute__((always_inline)) STI(void)
+{
+    asm volatile ("sti");
+}
+
 uint64_t read_cr2(void);
 
 #endif

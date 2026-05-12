@@ -84,6 +84,8 @@ struct limine_tsc_frequency_response *tsc_frequency_response;
 
 struct limine_framebuffer *limine_framebuffer_ctx = NULL;
 
+uintptr_t HHDM_OFFSET;
+
 void initializeLimineRequests(void)
 {
     // Ensure the bootloader actually understands our base revision (see spec).
@@ -110,6 +112,7 @@ void initializeLimineRequests(void)
 
     memmap_response = memmap_request.response;
     hhdm_response = hhdm_request.response;
+    HHDM_OFFSET = hhdm_response->offset;
 
     executable_file_response = executable_file_request.response;
     executable_address_response = executable_address_request.response;

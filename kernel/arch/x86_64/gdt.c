@@ -18,6 +18,7 @@ extern void setGdt(struct GDTR* gdtr);
 extern void reloadSegments(void);
 
 struct TSS tss;
+uint64_t tss_addr;
 
 struct GDTItem generateGDTItem(uint32_t base, uint32_t limit, uint8_t access_byte, uint8_t flags)
 {
@@ -54,7 +55,7 @@ void encodeGDTItem(uint8_t *target, struct GDTItem source)
 
 void encodeTSS(uint8_t *target)
 {
-  uint64_t tss_addr = (uint64_t)&tss;
+  tss_addr = (uint64_t)&tss;
   uint32_t shift_addr = tss_addr >> 32;
   encodeGDTItem(target, generateGDTItem(tss_addr & 0xFFFFFFFF, sizeof(tss) - 1, 0x89, 0));
   memcpy(&target[8], &shift_addr, sizeof(uint32_t));

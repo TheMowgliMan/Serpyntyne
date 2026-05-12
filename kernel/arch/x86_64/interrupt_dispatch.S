@@ -46,13 +46,18 @@ popq %rax
 cld
 movq %rsp, %rdi
 
+sti
 call handle_interrupt
 cli
+nop
 .endm
 
 .macro ISR vector:req
 .global isr\vector
 isr\vector :
+    cli
+    nop
+
     pushq $0 # All end-of-interrupt code assumes that there is an error code on the top of the stack, or a parameter, so we push an irrelevant value.
     pushq $\vector
     push_registers
@@ -69,6 +74,9 @@ isr\vector :
 .macro ISRERR vector:req
 .global isr\vector
 isr\vector :
+    cli
+    nop
+
     # The error code is handled for us by the CPU.
     pushq $\vector
     push_registers

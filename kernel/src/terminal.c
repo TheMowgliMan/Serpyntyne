@@ -401,3 +401,8 @@ void pad_with_spaces(void)
         kputchar(0x20);
     }
 }
+
+void jailbreak_terminal(void)
+{
+    releaseSpinlock(term_lock);
+}
